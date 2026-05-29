@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom - Partner view</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="read-only">
+
+<div id="headerContainer"></div>
+
+<div id="partnerBanner" class="read-only-banner hidden"></div>
+
+<div id="loading">Loading...</div>
+
+<div id="dashboard" class="dashboard hidden">
+
+  <div class="card" id="statusCard">
+    <h3>Status</h3>
+    <div id="status" class="value"></div>
+    <div class="sub">Fertility phase</div>
+  </div>
+
+  <div class="card">
+    <h3>Cycle day</h3>
+    <div id="cycleDay" class="value"></div>
+    <div class="sub">Current cycle progress</div>
+  </div>
+
+  <div class="card" id="periodCard">
+    <h3>Days till period</h3>
+    <div id="daysLeft" class="value"></div>
+    <div id="nextPeriod" class="sub"></div>
+  </div>
+
+</div>
+
+<section id="calendarSection" class="calendar hidden">
+  <div class="cal-header">
+    <button type="button" id="calPrev" class="cal-nav" aria-label="Previous month">&larr;</button>
+    <h2 id="calMonthLabel" class="cal-month-label"></h2>
+    <button type="button" id="calNext" class="cal-nav" aria-label="Next month">&rarr;</button>
+  </div>
+
+  <div class="cal-weekdays">
+    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+  </div>
+
+  <div id="calGrid" class="cal-grid"></div>
+
+  <p class="cal-hint">Double-click a day to see details (read-only).</p>
+</section>
+
+<div id="dayPopup" class="modal hidden">
+  <div class="modal-content day-popup-content">
+    <h3 id="dayPopupTitle">Day</h3>
+    <div id="dayPopupBody"></div>
+    <button type="button" id="dayPopupClose">Close</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="js/supabase.js"></script>
+<script type="module" src="js/partnerDashboard.js"></script>
+
+</body>
+</html>

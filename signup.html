@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom - Sign up</title>
+
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1 class="logo">Bloom</h1>
+
+    <div class="form-box">
+
+      <h2>Create account</h2>
+
+      <!-- Email -->
+      <input type="email" id="email" placeholder="Email">
+
+      <!-- Password -->
+      <input type="password" id="password" placeholder="Password">
+
+      <!-- Confirm password (ieteicams) -->
+      <input type="password" id="confirmPassword" placeholder="Confirm password">
+
+      <!-- Sign up button -->
+      <button id="signupBtn">Create account</button>
+
+      <!-- Feedback message -->
+      <p id="signupMsg" class="form-msg hidden"></p>
+
+      <!-- Forgot password (parasti šeit nav obligāti, bet var atstāt) -->
+      <a href="reset-password.html" class="link">
+        Forgot password?
+      </a>
+
+      <!-- Switch back to login -->
+      <p class="switch">
+        Already have an account?
+        <a href="index.html">Log in</a>
+      </p>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/signup.js"></script>
+
+</body>
+</html>

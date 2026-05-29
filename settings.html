@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom - Settings</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <div id="headerContainer"></div>
+
+  <div class="settings-page">
+    <h1 class="settings-title">Settings</h1>
+
+    <section class="settings-section">
+      <h2>Cycle profile</h2>
+      <p class="settings-desc">Same information as onboarding. Changing these updates predictions on your calendar.</p>
+
+      <label for="lastPeriodStart">Last period start date</label>
+      <input type="date" id="lastPeriodStart">
+
+      <label for="periodLength">Average period length (days)</label>
+      <input type="number" id="periodLength" min="1" max="14" placeholder="e.g. 5">
+
+      <label for="cycleLength">Average cycle length (days)</label>
+      <input type="number" id="cycleLength" min="15" max="60" placeholder="e.g. 28">
+
+      <div class="settings-actions">
+        <button type="button" id="saveProfileBtn" class="btn-save">Save profile</button>
+      </div>
+      <p id="profileMsg" class="settings-msg hidden"></p>
+    </section>
+
+    <section class="settings-section">
+      <h2>Account</h2>
+
+      <label for="emailInput">Email</label>
+      <input type="email" id="emailInput" autocomplete="email">
+
+      <div class="settings-actions">
+        <button type="button" id="updateEmailBtn" class="btn-save">Update email</button>
+      </div>
+      <p id="emailMsg" class="settings-msg hidden"></p>
+
+      <hr class="settings-divider">
+
+      <label for="newPassword">New password</label>
+      <input type="password" id="newPassword" autocomplete="new-password" placeholder="At least 6 characters">
+
+      <label for="confirmPassword">Confirm new password</label>
+      <input type="password" id="confirmPassword" autocomplete="new-password">
+
+      <div class="settings-actions">
+        <button type="button" id="updatePasswordBtn" class="btn-save">Update password</button>
+      </div>
+      <p id="passwordMsg" class="settings-msg hidden"></p>
+    </section>
+
+    <section class="settings-section">
+      <h2>Sharing</h2>
+      <p class="settings-desc">Invite your partner by email. They need a Bloom account (or can sign up after you invite). They can view your cycle data but cannot add or edit anything.</p>
+
+      <label for="partnerEmailInput">Partner email</label>
+      <input type="email" id="partnerEmailInput" placeholder="partner@example.com" autocomplete="email">
+
+      <div class="settings-actions">
+        <button type="button" id="invitePartnerBtn" class="btn-save">Invite partner</button>
+      </div>
+      <p id="sharingMsg" class="settings-msg hidden"></p>
+
+      <div id="partnerInvitesList" class="partner-invites-list"></div>
+    </section>
+
+    <section class="settings-section settings-danger">
+      <h2>Danger zone</h2>
+      <p class="settings-desc">Permanently delete your account and all cycle data. This cannot be undone.</p>
+      <button type="button" id="deleteAccountBtn" class="btn-danger">Delete account</button>
+      <p id="deleteMsg" class="settings-msg hidden"></p>
+    </section>
+  </div>
+
+  <div id="deleteConfirmModal" class="modal hidden">
+    <div class="modal-content delete-confirm-content">
+      <button type="button" id="deleteConfirmClose" class="modal-close-x" aria-label="Close">&times;</button>
+
+      <h3 class="delete-confirm-title">Delete account?</h3>
+
+      <p class="delete-confirm-text">
+        This permanently deletes your account and all your data — cycle history, logs, settings, and partner invites.
+        <strong>This cannot be undone.</strong>
+      </p>
+
+      <label for="deleteConfirmInput" class="delete-confirm-label">
+        Type <strong>DELETE</strong> to confirm:
+      </label>
+      <input type="text" id="deleteConfirmInput" autocomplete="off" placeholder="DELETE">
+
+      <div class="modal-actions">
+        <button type="button" id="deleteConfirmCancel" class="btn-cancel">Cancel</button>
+        <button type="button" id="deleteConfirmYes" class="btn-danger" disabled>Yes, delete my account</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js"></script>
+  <script type="module" src="js/settings.js"></script>
+
+</body>
+</html>

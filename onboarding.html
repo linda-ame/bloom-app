@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom - Onboarding</title>
+
+  <link rel="stylesheet" href="css/app.css">
+</head>
+
+<body>
+    
+    <div id="headerContainer"></div>
+
+  <div class="container">
+
+    <div class="form-box">
+
+        <h3>
+        Welcome! You have successfully registered to Bloom.
+        Please fill out the basic information needed to create your personalized cycle calendar.
+        </h3>
+
+      <!-- Last period start -->
+      <label>Last period start date</label>
+      <input type="date" id="lastPeriodStart">
+
+      <!-- Average period length -->
+      <label>Average period length (days)</label>
+      <input type="number" id="periodLength" placeholder="e.g. 5">
+
+      <!-- Average cycle length -->
+      <label>Average cycle length (days)</label>
+      <input type="number" id="cycleLength" placeholder="e.g. 28">
+
+      <!-- Save button -->
+      <button id="saveBtn">Save</button>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js"></script>
+  <script type="module" src="js/onboarding.js"></script>
+
+
+</body>
+</html>

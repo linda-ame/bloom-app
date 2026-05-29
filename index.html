@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom - Login</title>
+
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1 class="logo">Bloom</h1>
+
+    <div class="form-box">
+
+      <h2>Log in</h2>
+
+      <!-- Email -->
+      <input type="email" id="email" placeholder="Email">
+
+      <!-- Password -->
+      <input type="password" id="password" placeholder="Password">
+
+      <!-- Login button -->
+      <button id="loginBtn">Log in</button>
+
+      <!-- Feedback message -->
+      <p id="loginMsg" class="form-msg hidden"></p>
+
+      <!-- Forgot password -->
+      <a href="reset-password.html" class="link">
+        Forgot password?
+      </a>
+
+      <!-- Switch to signup -->
+      <p class="switch">
+        Don't have an account?
+        <a href="signup.html">Create account</a>
+      </p>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js"></script>
+  <script type="module" src="js/login.js"></script>
+
+</body>
+</html>

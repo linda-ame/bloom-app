@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bloom Dashboard</title>
+</head>
+<link rel="stylesheet" href="css/app.css">
+<body>
+
+<div id="headerContainer"></div>
+
+<div id="loading">Loading...</div>
+
+  <!-- LOADING STATE -->
+
+<div id="dashboard" class="dashboard hidden">
+
+  <div class="card" id="statusCard">
+    <h3>Status</h3>
+    <div id="status" class="value"></div>
+    <div class="sub">Fertility phase</div>
+</div>
+  
+    <div class="card">
+    <h3>Cycle day</h3>
+    <div id="cycleDay" class="value"></div>
+    <div class="sub">Current cycle progress</div>
+  </div>
+
+  <div class="card" id="periodCard">
+    <h3>Days till period</h3>
+    <div id="daysLeft" class="value"></div>
+    <div id="nextPeriod" class="sub"></div>
+</div>
+
+<div class="action-slot" id="actionCard">
+  <button id="logPeriodBtn" class="btn-add-period">+ Add period</button>
+  <button id="logOtherBtn" class="btn-add-other">+ Add other</button>
+</div>
+
+</div>
+
+<section id="calendarSection" class="calendar hidden">
+  <div class="cal-header">
+    <button type="button" id="calPrev" class="cal-nav" aria-label="Previous month">&larr;</button>
+    <h2 id="calMonthLabel" class="cal-month-label"></h2>
+    <button type="button" id="calNext" class="cal-nav" aria-label="Next month">&rarr;</button>
+  </div>
+
+  <div class="cal-weekdays">
+    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+  </div>
+
+  <div id="calGrid" class="cal-grid"></div>
+
+  <p class="cal-hint">Click a day to select it for logging. Double-click for details.</p>
+</section>
+
+<div id="dayPopup" class="modal hidden">
+  <div class="modal-content day-popup-content">
+    <h3 id="dayPopupTitle">Day</h3>
+    <div id="dayPopupBody"></div>
+    <button type="button" id="dayPopupClose">Close</button>
+  </div>
+</div>
+
+<div id="logModal" class="modal hidden">
+  <div class="modal-content">
+
+    <button type="button" id="modalCloseX" class="modal-close-x" aria-label="Close">&times;</button>
+
+    <h3 id="modalTitle">Log entry</h3>
+
+    <!-- PERIOD FORM -->
+    <div id="periodForm">
+      <label>Start date</label>
+      <input type="date" id="periodDate">
+      <div class="modal-actions">
+        <button id="savePeriod" class="btn-save">Save period</button>
+        <button type="button" id="closeModalPeriod" class="btn-cancel">Close</button>
+      </div>
+    </div>
+
+    <!-- OTHER FORM -->
+    <div id="otherForm" class="hidden">
+
+      <label>Date</label>
+      <input type="date" id="otherDate">
+
+      <div class="log-section">
+        <p class="log-section-label">Ovulation</p>
+        <div class="log-pills">
+          <button type="button" class="log-pill" data-category="ovulation" data-value="Confirmed ovulation">Confirmed</button>
+          <button type="button" class="log-pill" data-category="ovulation" data-value="Possible ovulation">Possible</button>
+          <button type="button" class="log-pill" data-category="ovulation" data-value="Ovulation test positive">Test +</button>
+          <button type="button" class="log-pill" data-category="ovulation" data-value="Ovulation test negative">Test −</button>
+        </div>
+      </div>
+
+      <div class="log-section">
+        <p class="log-section-label">Spotting</p>
+        <div class="log-pills">
+          <button type="button" class="log-pill" data-category="spotting" data-value="Light spotting">Light</button>
+          <button type="button" class="log-pill" data-category="spotting" data-value="Mid-cycle bleeding">Mid-cycle</button>
+          <button type="button" class="log-pill" data-category="spotting" data-value="Post-ovulation spotting">Post-ovulation</button>
+        </div>
+      </div>
+
+      <div class="log-section">
+        <p class="log-section-label">Discharge / Mucus</p>
+        <div class="log-pills">
+          <button type="button" class="log-pill" data-category="discharge" data-value="Egg white">Egg white</button>
+          <button type="button" class="log-pill" data-category="discharge" data-value="Clear & watery">Clear & watery</button>
+          <button type="button" class="log-pill" data-category="discharge" data-value="Creamy">Creamy</button>
+          <button type="button" class="log-pill" data-category="discharge" data-value="Sticky">Sticky</button>
+          <button type="button" class="log-pill" data-category="discharge" data-value="Dry">Dry</button>
+        </div>
+      </div>
+
+      <div class="log-section">
+        <p class="log-section-label">Symptoms</p>
+        <div class="log-pills">
+          <button type="button" class="log-pill" data-category="symptom" data-value="Cramps">Cramps</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Bloating">Bloating</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Breast tenderness">Breast tenderness</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Headache">Headache</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Mood changes">Mood changes</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Fatigue">Fatigue</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Acne">Acne</button>
+          <button type="button" class="log-pill" data-category="symptom" data-value="Back pain">Back pain</button>
+        </div>
+      </div>
+
+      <div class="log-section">
+        <label class="log-section-label" for="otherTemp">Basal temperature (°C)</label>
+        <input type="number" id="otherTemp" min="35" max="42" step="0.01" placeholder="e.g. 36.6">
+      </div>
+
+      <div class="log-section">
+        <label class="log-section-label" for="otherNote">Note (optional)</label>
+        <input type="text" id="otherNote" placeholder="Any other observations...">
+      </div>
+
+      <div class="modal-actions">
+        <button id="saveOther" class="btn-save">Save</button>
+        <button type="button" id="closeModal" class="btn-cancel">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js"></script>
+ <script type="module" src="js/dashboard.js"></script>
+
+
+</body>
+</html>
