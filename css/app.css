@@ -392,6 +392,8 @@ h3 {
   padding: 20px;
   border-radius: 12px;
   width: 360px;
+  max-width: 92vw;
+  box-sizing: border-box;
   max-height: 85vh;
   overflow-y: auto;
   display: flex;
@@ -1055,4 +1057,117 @@ body.read-only .row-delete {
 .delete-confirm-content .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* =========================
+   MOBILE / RESPONSIVE
+   Applied on screens ≤ 600px wide (phones)
+========================= */
+
+@media (max-width: 600px) {
+
+  /* Header — tighter padding, smaller title */
+  .header {
+    padding: 8px 12px;
+  }
+
+  .header-center {
+    font-size: 14px;
+  }
+
+  .header-menu {
+    min-width: 200px;
+    max-width: calc(100vw - 24px);
+  }
+
+  /* Dashboard — stack cards vertically */
+  .dashboard {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .value {
+    font-size: 24px;
+  }
+
+  /* Action buttons */
+  .action-slot {
+    padding: 0;
+  }
+
+  /* Calendar — tighter padding, smaller fonts */
+  .calendar {
+    padding: 0 10px 16px;
+  }
+
+  .cal-month-label {
+    font-size: 16px;
+  }
+
+  .cal-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .cal-day {
+    min-height: 38px;
+    font-size: 12px;
+  }
+
+  .cal-weekdays {
+    font-size: 11px;
+  }
+
+  /* Modal — fill width on phone */
+  .modal {
+    padding: 16px 8px 8px;
+  }
+
+  .modal-content {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Settings — reduce side padding */
+  .settings-page {
+    padding: 0 12px;
+    margin: 16px auto 32px;
+  }
+
+  .settings-title {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .settings-section {
+    padding: 16px;
+  }
+
+  /* Container (used by onboarding etc.) */
+  .container {
+    margin: 16px auto;
+    padding: 0 12px;
+  }
+
+  /* Read-only banner */
+  .read-only-banner {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Form-box (used on onboarding-style pages) */
+  .form-box {
+    padding: 20px;
+  }
 }
