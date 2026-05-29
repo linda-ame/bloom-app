@@ -79,11 +79,18 @@ export async function loadHeader() {
     year: "numeric"
   })
 
+  const homeHref =
+    activeView.kind === "partner" && activeView.ownerId
+      ? `partner.html?owner=${encodeURIComponent(activeView.ownerId)}`
+      : "dashboard.html"
+
   document.getElementById("headerContainer").innerHTML = `
     <header class="header">
 
       <div class="header-left">
-        <h2>Bloom</h2>
+        <a href="${homeHref}" class="header-home-link" aria-label="Go to dashboard">
+          <h2>Bloom</h2>
+        </a>
       </div>
 
       <div class="header-center" id="todayDate">${todayLabel}</div>

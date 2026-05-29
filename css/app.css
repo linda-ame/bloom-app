@@ -36,6 +36,20 @@ body {
   min-width: 0;
 }
 
+.header-home-link {
+  display: inline-block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  transition: background 0.15s ease;
+}
+
+.header-home-link:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
 .header-center {
   flex: 2;
   display: flex;
