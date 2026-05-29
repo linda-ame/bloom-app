@@ -39,12 +39,10 @@ if sed --version >/dev/null 2>&1; then
 fi
 
 # Replace ?v=CURRENT with ?v=NEW in all HTML and JS files
-find . \
-  \( -name "*.html" -o -name "*.js" \) \
-  -not -path "./node_modules/*" \
-  -not -path "./.git/*" \
-  -print0 \
-| xargs -0 sed "${SED_INPLACE[@]}" "s/?v=$CURRENT/?v=$NEW/g"
+# (using a shell loop rather than xargs for cross-environment reliability)
+for f in *.html js/*.js; do
+  [ -f "$f" ] && sed "${SED_INPLACE[@]}" "s/?v=$CURRENT/?v=$NEW/g" "$f"
+done
 
 # Count changes for sanity
 COUNT=$(grep -h -oE "\?v=$NEW" *.html js/*.js 2>/dev/null | wc -l | tr -d ' ')
