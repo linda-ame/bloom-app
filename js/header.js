@@ -1,4 +1,4 @@
-import { getActiveView } from "./partnerLinks.js"
+import { getActiveView } from "./partnerLinks.js?v=1"
 
 function escapeHtml(str) {
   return String(str)
