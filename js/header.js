@@ -1,9 +1,4 @@
-import {
-  listAcceptedPartnersForMe,
-  getActiveView,
-  navigateToView
-} from "./partnerLinks.js"
-import { fetchUserProfile, isProfileComplete } from "./profile.js"
+import { getActiveView } from "./partnerLinks.js"
 
 function escapeHtml(str) {
   return String(str)
@@ -11,11 +6,6 @@ function escapeHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-}
-
-function isViewActive(kind, ownerId, activeView) {
-  if (kind === "self") return activeView.kind === "self"
-  return activeView.kind === "partner" && activeView.ownerId === ownerId
 }
 
 export async function loadHeader() {
@@ -29,49 +19,7 @@ export async function loadHeader() {
     return
   }
 
-  const partners = await listAcceptedPartnersForMe(supabase, user)
-  const profile = await fetchUserProfile(supabase, user.id)
-  const hasOwnData = isProfileComplete(profile)
   const activeView = getActiveView()
-
-  const viewOptionCount = (hasOwnData ? 1 : 0) + partners.length
-  const showViewOptions = viewOptionCount > 1
-
-  let viewOptionsHtml = ""
-  if (showViewOptions) {
-    const items = []
-
-    if (hasOwnData) {
-      const active = isViewActive("self", null, activeView)
-      items.push(`
-        <button type="button" class="header-menu-item header-view-option${active ? " is-active" : ""}" data-view-kind="self">
-          My data${active ? " ✓" : ""}
-        </button>
-      `)
-    }
-
-    for (const p of partners) {
-      const active = isViewActive("partner", p.owner_id, activeView)
-      items.push(`
-        <button type="button" class="header-menu-item header-view-option${active ? " is-active" : ""}" data-view-kind="partner" data-owner-id="${p.owner_id}">
-          ${escapeHtml(p.owner_email)}${active ? " ✓" : ""}
-        </button>
-      `)
-    }
-
-    viewOptionsHtml = `
-      <div class="header-view-options">
-        <div class="header-menu-section-label">Switch view</div>
-        ${items.join("")}
-      </div>
-    `
-  } else if (partners.length === 1 && !hasOwnData) {
-    viewOptionsHtml = `
-      <div class="header-menu-viewing-note">
-        Viewing ${escapeHtml(partners[0].owner_email)}
-      </div>
-    `
-  }
 
   const todayLabel = new Date().toLocaleDateString(undefined, {
     day: "numeric",
@@ -106,7 +54,6 @@ export async function loadHeader() {
             <div class="header-menu-greeting-label">Logged in as</div>
             <div class="header-menu-greeting-email" title="${escapeHtml(user.email)}">${escapeHtml(user.email)}</div>
           </div>
-          ${viewOptionsHtml}
           <a href="settings.html" class="header-menu-item">Settings</a>
           <button type="button" id="logoutBtn" class="header-menu-item header-menu-logout">Logout</button>
         </div>
@@ -131,19 +78,6 @@ export async function loadHeader() {
 
   document.addEventListener("click", closeMenu)
   menu?.addEventListener("click", (e) => e.stopPropagation())
-
-  document.querySelectorAll(".header-view-option").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation()
-      const kind = btn.dataset.viewKind
-      if (kind === "partner") {
-        const ownerId = btn.dataset.ownerId
-        if (ownerId) navigateToView({ kind: "partner", ownerId })
-      } else {
-        navigateToView({ kind: "self" })
-      }
-    })
-  })
 
   document.getElementById("logoutBtn")?.addEventListener("click", async () => {
     await supabase.auth.signOut()
