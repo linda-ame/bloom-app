@@ -1,0 +1,93 @@
+<!--
+  Bloom — "Invite user" email template.
+
+  WHERE TO PASTE THIS:
+  Supabase Dashboard -> Authentication -> Email Templates -> "Invite user"
+  Replace the message body with the HTML below, then click Save.
+
+  Subject line suggestion (set in the "Subject heading" field above the body):
+    You're invited to follow a cycle on Bloom
+
+  Supabase template variables used:
+    {{ .Email }}                  -> the invited person's email (your partner)
+    {{ .Data.invited_by_email }}  -> who sent the invite (you)
+    {{ .ConfirmationURL }}        -> the invite link (button + plain text)
+    {{ .SiteURL }}                -> the app base URL
+-->
+<div style="margin:0;padding:0;background:#fffcec;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fffcec;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#ff6ca2;padding:24px 32px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;letter-spacing:0.5px;">Bloom</h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 16px;font-size:20px;color:#333333;">You've been invited to Bloom</h2>
+
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#555555;">
+                <strong style="color:#333333;">{{ .Data.invited_by_email }}</strong>
+                has invited you (<strong style="color:#333333;">{{ .Email }}</strong>)
+                to follow their cycle on <strong>Bloom</strong>, a private cycle-tracking app.
+              </p>
+
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#555555;">
+                Bloom lets partners share cycle information in a calm, simple way.
+                You'll get a <strong>read-only view</strong> of their cycle calendar and
+                predictions — you can see everything, but only they can add or edit entries.
+              </p>
+
+              <!-- Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td align="center" style="border-radius:10px;background:#fe5e8c;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
+                      Accept invitation
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Plain link fallback -->
+              <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#888888;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin:0 0 24px;font-size:13px;line-height:1.5;word-break:break-all;">
+                <a href="{{ .ConfirmationURL }}" style="color:#fe5e8c;">{{ .ConfirmationURL }}</a>
+              </p>
+
+              <hr style="border:none;border-top:1px solid #eeeeee;margin:0 0 16px;">
+
+              <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#888888;">
+                App address:
+                <a href="{{ .SiteURL }}" style="color:#fe5e8c;">{{ .SiteURL }}</a>
+              </p>
+
+              <p style="margin:0;font-size:12px;line-height:1.5;color:#aaaaaa;">
+                If you weren't expecting this invitation, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#faf3fd;padding:16px 32px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#999999;">
+                Sent by Bloom · Private cycle tracking
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>
