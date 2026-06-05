@@ -34,14 +34,17 @@ export function navigateToView(view) {
   }
 }
 
-/** Accept pending invites matching the logged-in user's email. */
+/** Accept pending invites addressed to the logged-in user's email. */
 export async function acceptPendingInvites(supabase, user) {
   if (!user?.id || !user?.email) return
 
+  const userEmail = user.email.toLowerCase()
+
   const { data: pending, error } = await supabase
     .from("partner_links")
-    .select("id")
+    .select("id, owner_id, partner_email")
     .eq("status", "pending")
+    .eq("partner_email", userEmail)
 
   if (error) {
     console.error("acceptPendingInvites:", error)
@@ -50,6 +53,10 @@ export async function acceptPendingInvites(supabase, user) {
 
   const now = new Date().toISOString()
   for (const row of pending || []) {
+    // Safety guard: never let a user become their own partner.
+    if (row.owner_id === user.id) continue
+    if ((row.partner_email || "").toLowerCase() !== userEmail) continue
+
     const { error: updateError } = await supabase
       .from("partner_links")
       .update({
