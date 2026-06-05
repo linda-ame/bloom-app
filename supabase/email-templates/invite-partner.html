@@ -6,7 +6,7 @@
   Replace the message body with the HTML below, then click Save.
 
   Subject line suggestion (set in the "Subject heading" field above the body):
-    You're invited to follow a cycle on Bloom
+    {{ .Data.invited_by_email }} invites you to follow their cycle on Bloom
 
   Supabase template variables used:
     {{ .Email }}                  -> the invited person's email (your partner)
