@@ -1,5 +1,5 @@
-import { loadHeader } from "./header.js?v=3"
-import { acceptPendingInvites, listMyInvites } from "./partnerLinks.js?v=3"
+import { loadHeader } from "./header.js?v=4"
+import { acceptPendingInvites, listMyInvites } from "./partnerLinks.js?v=4"
 
 const supabase = window.supabaseClient
 
@@ -150,7 +150,7 @@ async function initSettings() {
 
     const baseUrl =
       window.SUPABASE_URL || "https://gixndvzewaizeqqluezu.supabase.co"
-    const redirectTo = `${window.location.origin}/dashboard.html`
+    const redirectTo = new URL("dashboard.html", window.location.href).href
 
     try {
       const res = await fetch(`${baseUrl}/functions/v1/invite-partner`, {

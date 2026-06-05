@@ -28,7 +28,7 @@ async function handleResetRequest() {
   resetBtn.disabled = true
   resetBtn.textContent = "Sending..."
 
-  const redirectTo = `${window.location.origin}/update-password.html`
+  const redirectTo = new URL("update-password.html", window.location.href).href
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo
