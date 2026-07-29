@@ -1,6 +1,6 @@
-import { loadHeader } from "./header.js?v=9"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=9"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=9"
+import { loadHeader } from "./header.js?v=10"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=10"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=10"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
@@ -10,7 +10,7 @@ import {
   listTimeZones,
   formatHourLabel,
   clampHour
-} from "./notificationPrefs.js?v=9"
+} from "./notificationPrefs.js?v=10"
 
 const supabase = window.supabaseClient
 

@@ -181,10 +181,46 @@ function daysUntilInWindow(eventDate: Date, today: Date, daysBefore: number) {
   return diff
 }
 
+/** Period reminders: countdown, then keep going while overdue until logged. */
+function periodReminderState(
+  nextPeriod: Date,
+  today: Date,
+  daysBefore: number,
+  maxLateDays = 14
+): { kind: "upcoming" | "due" | "late"; days: number } | null {
+  const diff = daysBetween(today, nextPeriod)
+  if (diff > daysBefore) return null
+  if (diff > 0) return { kind: "upcoming", days: diff }
+  if (diff === 0) return { kind: "due", days: 0 }
+  const late = Math.abs(diff)
+  if (late > maxLateDays) return null
+  return { kind: "late", days: late }
+}
+
 function remainingLabel(diff: number) {
   if (diff === 0) return "today"
   if (diff === 1) return "in 1 day"
   return `in ${diff} days`
+}
+
+function periodBodySelf(state: { kind: string; days: number }) {
+  if (state.kind === "due") return "Your period is expected today."
+  if (state.kind === "late") {
+    return state.days === 1
+      ? "Your period is 1 day late — log it when it starts."
+      : `Your period is ${state.days} days late — log it when it starts.`
+  }
+  return `Your period is expected ${remainingLabel(state.days)}.`
+}
+
+function periodBodyPartner(name: string, state: { kind: string; days: number }) {
+  if (state.kind === "due") return `${name}: period expected today.`
+  if (state.kind === "late") {
+    return state.days === 1
+      ? `${name}: period is 1 day late.`
+      : `${name}: period is ${state.days} days late.`
+  }
+  return `${name}: period expected ${remainingLabel(state.days)}.`
 }
 
 Deno.serve(async (req) => {
@@ -249,8 +285,8 @@ Deno.serve(async (req) => {
 
       if (prefOn(prefs, "self_period_approaching")) {
         const days = Number(prefs.self_period_approaching.days_before) || 3
-        const rem = daysUntilInWindow(nextPeriod, today, days)
-        if (rem != null) {
+        const state = periodReminderState(nextPeriod, today, days)
+        if (state) {
           totalSent += await maybeSend(
             admin,
             userId,
@@ -259,7 +295,7 @@ Deno.serve(async (req) => {
             slot,
             {
               title: "Bloom",
-              body: `Your period is expected ${remainingLabel(rem)}.`,
+              body: periodBodySelf(state),
               url: "./dashboard.html"
             }
           )
@@ -405,8 +441,8 @@ Deno.serve(async (req) => {
           prefOn(partnerPrefs, "receive_partner_period_expected")
         ) {
           const days = Number(prefs.partner_period_expected.days_before) || 3
-          const rem = daysUntilInWindow(nextPeriod, partnerToday, days)
-          if (rem != null) {
+          const state = periodReminderState(nextPeriod, partnerToday, days)
+          if (state) {
             totalSent += await maybeSend(
               admin,
               partnerId,
@@ -415,7 +451,7 @@ Deno.serve(async (req) => {
               partnerSlot,
               {
                 title: "Bloom",
-                body: `${name}: period expected ${remainingLabel(rem)}.`,
+                body: periodBodyPartner(name, state),
                 url: partnerUrl
               }
             )

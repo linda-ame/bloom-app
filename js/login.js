@@ -1,4 +1,4 @@
-import { getPostAuthRedirect } from "./profile.js?v=9"
+import { getPostAuthRedirect } from "./profile.js?v=10"
 
 const loginMsg = document.getElementById("loginMsg")
 const loginBtn = document.getElementById("loginBtn")
