@@ -174,9 +174,17 @@ async function maybeSend(
   return sent
 }
 
-function daysBeforeMatch(eventDate: Date, today: Date, daysBefore: number) {
+function daysUntilInWindow(eventDate: Date, today: Date, daysBefore: number) {
   const diff = daysBetween(today, eventDate)
-  return diff === daysBefore
+  // Fire every day from N days before through the event day (inclusive).
+  if (diff < 0 || diff > daysBefore) return null
+  return diff
+}
+
+function remainingLabel(diff: number) {
+  if (diff === 0) return "today"
+  if (diff === 1) return "in 1 day"
+  return `in ${diff} days`
 }
 
 Deno.serve(async (req) => {
@@ -241,16 +249,17 @@ Deno.serve(async (req) => {
 
       if (prefOn(prefs, "self_period_approaching")) {
         const days = Number(prefs.self_period_approaching.days_before) || 3
-        if (daysBeforeMatch(nextPeriod, today, days)) {
+        const rem = daysUntilInWindow(nextPeriod, today, days)
+        if (rem != null) {
           totalSent += await maybeSend(
             admin,
             userId,
             "self_period_approaching",
-            ymd(nextPeriod),
+            ymd(today),
             slot,
             {
               title: "Bloom",
-              body: `Your period is expected in ${days} day${days === 1 ? "" : "s"}.`,
+              body: `Your period is expected ${remainingLabel(rem)}.`,
               url: "./dashboard.html"
             }
           )
@@ -259,16 +268,17 @@ Deno.serve(async (req) => {
 
       if (prefOn(prefs, "self_ovulation_approaching") && ovulation) {
         const days = Number(prefs.self_ovulation_approaching.days_before) || 2
-        if (daysBeforeMatch(ovulation, today, days)) {
+        const rem = daysUntilInWindow(ovulation, today, days)
+        if (rem != null) {
           totalSent += await maybeSend(
             admin,
             userId,
             "self_ovulation_approaching",
-            ymd(ovulation),
+            ymd(today),
             slot,
             {
               title: "Bloom",
-              body: `Possible ovulation in ${days} day${days === 1 ? "" : "s"}.`,
+              body: `Possible ovulation ${remainingLabel(rem)}.`,
               url: "./dashboard.html"
             }
           )
@@ -279,16 +289,17 @@ Deno.serve(async (req) => {
         const safeStart = safeAfterFertileStart(windows)
         if (safeStart) {
           const days = Number(prefs.self_safe_approaching.days_before) || 2
-          if (daysBeforeMatch(safeStart, today, days)) {
+          const rem = daysUntilInWindow(safeStart, today, days)
+          if (rem != null) {
             totalSent += await maybeSend(
               admin,
               userId,
               "self_safe_approaching",
-              ymd(safeStart),
+              ymd(today),
               slot,
               {
                 title: "Bloom",
-                body: `Low-fertility (safer) days begin in ${days} day${days === 1 ? "" : "s"}.`,
+                body: `Low-fertility (safer) days begin ${remainingLabel(rem)}.`,
                 url: "./dashboard.html"
               }
             )
@@ -349,16 +360,17 @@ Deno.serve(async (req) => {
           fertileStart
         ) {
           const days = Number(prefs.partner_fertile_window.days_before) || 2
-          if (daysBeforeMatch(fertileStart, partnerToday, days)) {
+          const rem = daysUntilInWindow(fertileStart, partnerToday, days)
+          if (rem != null) {
             totalSent += await maybeSend(
               admin,
               partnerId,
               "partner_fertile_window",
-              ymd(fertileStart),
+              ymd(partnerToday),
               partnerSlot,
               {
                 title: "Bloom",
-                body: `${name}: fertile window starts in ${days} day${days === 1 ? "" : "s"} (last safer days soon).`,
+                body: `${name}: fertile window starts ${remainingLabel(rem)} (last safer days soon).`,
                 url: partnerUrl
               }
             )
@@ -371,16 +383,17 @@ Deno.serve(async (req) => {
           safeStart
         ) {
           const days = Number(prefs.partner_safe_after_fertile.days_before) || 2
-          if (daysBeforeMatch(safeStart, partnerToday, days)) {
+          const rem = daysUntilInWindow(safeStart, partnerToday, days)
+          if (rem != null) {
             totalSent += await maybeSend(
               admin,
               partnerId,
               "partner_safe_after_fertile",
-              ymd(safeStart),
+              ymd(partnerToday),
               partnerSlot,
               {
                 title: "Bloom",
-                body: `${name}: last fertile days ending — safer days in ${days} day${days === 1 ? "" : "s"}.`,
+                body: `${name}: last fertile days ending — safer days begin ${remainingLabel(rem)}.`,
                 url: partnerUrl
               }
             )
@@ -392,16 +405,17 @@ Deno.serve(async (req) => {
           prefOn(partnerPrefs, "receive_partner_period_expected")
         ) {
           const days = Number(prefs.partner_period_expected.days_before) || 3
-          if (daysBeforeMatch(nextPeriod, partnerToday, days)) {
+          const rem = daysUntilInWindow(nextPeriod, partnerToday, days)
+          if (rem != null) {
             totalSent += await maybeSend(
               admin,
               partnerId,
               "partner_period_expected",
-              ymd(nextPeriod),
+              ymd(partnerToday),
               partnerSlot,
               {
                 title: "Bloom",
-                body: `${name}: period expected in ${days} day${days === 1 ? "" : "s"}.`,
+                body: `${name}: period expected ${remainingLabel(rem)}.`,
                 url: partnerUrl
               }
             )

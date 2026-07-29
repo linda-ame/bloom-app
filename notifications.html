@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#ff6ca2">
 
   <title>Bloom - Notifications</title>
-  <link rel="stylesheet" href="css/app.css?v=8">
+  <link rel="stylesheet" href="css/app.css?v=9">
 </head>
 <body>
 
@@ -75,7 +75,7 @@
 
       <section id="selfSection" class="settings-section hidden">
         <h2>For myself</h2>
-        <p class="settings-desc">Alerts on this device about your own cycle.</p>
+        <p class="settings-desc">Alerts on this device about your own cycle. “Days before” means reminders start that many days ahead and repeat every day until the day itself.</p>
 
         <div class="notif-row" data-pref="self_period_approaching">
           <div class="notif-row-main">
@@ -121,6 +121,7 @@
         <h2>For partner</h2>
         <p class="settings-desc">
           Types you allow to be sent to your partner. They must also enable notifications on their device and opt in to each type.
+          “Days before” reminders repeat every day until the event.
         </p>
 
         <div class="notif-row" data-pref="partner_period_logged">
@@ -222,8 +223,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=8"></script>
-  <script type="module" src="js/notifications.js?v=8"></script>
+  <script src="js/supabase.js?v=9"></script>
+  <script type="module" src="js/notifications.js?v=9"></script>
 
 </body>
 </html>
