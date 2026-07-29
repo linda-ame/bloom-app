@@ -1,81 +1,63 @@
 # Deploying Bloom notifications
 
-Follow these steps once after pulling the notifications feature.
+## Status (already done via CLI for project `gixndvzewaizeqqluezu`)
 
-## 1. Apply the database migration
+- [x] Linked project with Supabase CLI
+- [x] Applied `supabase/migrations/notifications.sql` to the remote database
+- [x] Set secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`
+- [x] Deployed Edge Functions: `push-vapid-public`, `push-subscribe`, `notify-period-logged`, `notify-scheduled`
+- [ ] Add `CRON_SECRET` as a **GitHub Actions secret** (see below) so hourly scheduling works
 
-In **Supabase Dashboard → SQL Editor**, paste and run the contents of:
+## One step left: GitHub Actions cron secret
 
-`supabase/migrations/notifications.sql`
+Scheduled alerts (period in X days, fertile window, etc.) are triggered by
+[`.github/workflows/notify-scheduled.yml`](../.github/workflows/notify-scheduled.yml)
+every hour.
 
-This adds:
+1. Open https://github.com/linda-ame/bloom-app/settings/secrets/actions
+2. Click **New repository secret**
+3. Name: `CRON_SECRET`
+4. Value: the same `CRON_SECRET` that was set on Supabase (rotate with
+   `supabase secrets set CRON_SECRET="newvalue"` if you lost it)
 
-- `profiles.display_name`
-- `notification_prefs`
-- `push_subscriptions`
-- `notification_log`
+After that, the workflow runs automatically. You can also run it manually under
+**Actions → Bloom scheduled notifications → Run workflow**.
 
-## 2. Generate VAPID keys
+## Manual deploy (if you need to redo)
 
-On your computer (Node.js):
+### Apply SQL
+
+```bash
+supabase link --project-ref gixndvzewaizeqqluezu
+supabase db query --linked -f supabase/migrations/notifications.sql
+```
+
+### VAPID keys
 
 ```bash
 npx web-push generate-vapid-keys
+supabase secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..." VAPID_SUBJECT="mailto:you@example.com" CRON_SECRET="long-random-string"
 ```
 
-Copy the **Public Key** and **Private Key**.
-
-## 3. Set Edge Function secrets
-
-In **Supabase Dashboard → Edge Functions → Secrets** (or CLI):
+### Deploy functions
 
 ```bash
-supabase secrets set VAPID_PUBLIC_KEY="your_public_key"
-supabase secrets set VAPID_PRIVATE_KEY="your_private_key"
-supabase secrets set VAPID_SUBJECT="mailto:your-email@example.com"
-supabase secrets set CRON_SECRET="a-long-random-string"
-```
-
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are usually already available to functions.
-
-## 4. Deploy Edge Functions
-
-From the project root (with Supabase CLI logged in and linked to the project):
-
-```bash
-supabase functions deploy push-vapid-public
+supabase functions deploy push-vapid-public --no-verify-jwt
 supabase functions deploy push-subscribe
 supabase functions deploy notify-period-logged
-supabase functions deploy notify-scheduled
+supabase functions deploy notify-scheduled --no-verify-jwt
 ```
 
-## 5. Schedule the daily / hourly job
-
-Scheduled alerts fire at **08:00** and **20:00** in each user’s device timezone.
-
-Use **Supabase Dashboard → Edge Functions → notify-scheduled → Schedules**, or create a cron that calls the function every hour:
-
-```bash
-curl -X POST "https://YOUR_PROJECT.supabase.co/functions/v1/notify-scheduled" \
-  -H "Authorization: Bearer YOUR_CRON_SECRET" \
-  -H "Content-Type: application/json"
-```
-
-Recommended: run **hourly** so morning/evening slots are hit for all timezones.
-
-Example with [cron-job.org](https://cron-job.org) or GitHub Actions: POST every hour with `Authorization: Bearer <CRON_SECRET>`.
-
-## 6. Test in the app
+## Test in the app
 
 1. Open Bloom (Home Screen / PWA on iOS).
 2. Set a **Display name** under Settings → Account.
-3. Open the gear menu → **Notifications**.
-4. Toggle **Enable notifications** and allow the browser prompt.
-5. Configure self / partner / receive toggles → **Save**.
-6. Log a period to test `partner_period_logged` (partner must have receive + master ON).
+3. Gear menu → **Notifications** → enable → allow browser prompt.
+4. Configure toggles → **Save**.
+5. Log a period to test partner “period logged” (partner must have receive + master ON).
 
 ## Notes
 
 - Partner pushes require **both** sides: owner “For partner” type ON **and** partner “Receive” type ON.
-- iOS requires Bloom added to the Home Screen (PWA) for Web Push.
-- The live site must be HTTPS (GitHub Pages is fine).
+- iOS requires Bloom on the Home Screen for Web Push.
+- Period-logged alerts work without the cron; timed alerts need the GitHub Actions hourly job.
