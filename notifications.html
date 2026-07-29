@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#ff6ca2">
 
   <title>Bloom - Notifications</title>
-  <link rel="stylesheet" href="css/app.css?v=7">
+  <link rel="stylesheet" href="css/app.css?v=8">
 </head>
 <body>
 
@@ -42,13 +42,14 @@
       <p id="notifMsg" class="settings-msg hidden"></p>
     </section>
 
-    <div id="notifDetails" class="hidden">
+    <div id="notifDetails">
 
       <section class="settings-section" id="scheduleSection">
         <h2>When to send</h2>
         <p class="settings-desc">
           Timed alerts (period / fertile / safe windows) use these hours in your timezone.
           Instant alerts (e.g. period just logged) are sent right away.
+          Turn on “Enable notifications” above (and allow Chrome) so pushes actually arrive.
         </p>
 
         <label for="notifTimezone">Timezone</label>
@@ -221,8 +222,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=7"></script>
-  <script type="module" src="js/notifications.js?v=7"></script>
+  <script src="js/supabase.js?v=8"></script>
+  <script type="module" src="js/notifications.js?v=8"></script>
 
 </body>
 </html>

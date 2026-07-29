@@ -1,6 +1,6 @@
-import { loadHeader } from "./header.js?v=7"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=7"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=7"
+import { loadHeader } from "./header.js?v=8"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=8"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=8"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
@@ -10,7 +10,7 @@ import {
   listTimeZones,
   formatHourLabel,
   clampHour
-} from "./notificationPrefs.js?v=7"
+} from "./notificationPrefs.js?v=8"
 
 const supabase = window.supabaseClient
 
@@ -133,8 +133,10 @@ function readPrefsFromForm(base) {
   return prefs
 }
 
-function setDetailsVisible(on) {
-  document.getElementById("notifDetails")?.classList.toggle("hidden", !on)
+function setDetailsVisible(_on) {
+  // Schedule and alert prefs stay visible so users can set times
+  // even before Chrome grants notification permission.
+  document.getElementById("notifDetails")?.classList.remove("hidden")
 }
 
 function selectedTimezone() {
@@ -167,12 +169,12 @@ async function initNotifications() {
 
   let { enabled, prefs } = await fetchNotificationPrefs(supabase, user.id)
   applyPrefsToForm(prefs)
+  setDetailsVisible(true)
 
   document.getElementById("notifFrequency")?.addEventListener("change", syncFrequencyUI)
 
   const master = document.getElementById("masterEnabled")
   if (master) master.checked = enabled
-  setDetailsVisible(enabled)
 
   master?.addEventListener("change", async () => {
     hideMsg()
@@ -183,13 +185,11 @@ async function initNotifications() {
         prefs = readPrefsFromForm(prefs)
         await registerPushSubscription(supabase, selectedTimezone())
         enabled = true
-        setDetailsVisible(true)
         await saveNotificationPrefs(supabase, user.id, true, prefs)
         showMsg("Notifications enabled on this device.")
       } catch (err) {
         master.checked = false
         enabled = false
-        setDetailsVisible(false)
         showMsg(err.message || "Could not enable notifications.", true)
       }
       return
@@ -201,7 +201,6 @@ async function initNotifications() {
       // ignore
     }
     enabled = false
-    setDetailsVisible(false)
     prefs = readPrefsFromForm(prefs)
     await saveNotificationPrefs(supabase, user.id, false, prefs)
     showMsg("Notifications turned off on this device.")
@@ -209,16 +208,17 @@ async function initNotifications() {
 
   document.getElementById("saveNotifBtn")?.addEventListener("click", async () => {
     hideMsg()
-    if (!master?.checked) {
-      showMsg("Turn on notifications first.", true)
-      return
-    }
-
     prefs = readPrefsFromForm(prefs)
     try {
-      await registerPushSubscription(supabase, prefs.schedule.timezone)
-      await saveNotificationPrefs(supabase, user.id, true, prefs)
-      showMsg("Notification settings saved.")
+      if (master?.checked) {
+        await registerPushSubscription(supabase, prefs.schedule.timezone)
+      }
+      await saveNotificationPrefs(supabase, user.id, Boolean(master?.checked), prefs)
+      showMsg(
+        master?.checked
+          ? "Notification settings saved."
+          : "Settings saved. Turn on “Enable notifications” (and Allow in Chrome) to receive pushes."
+      )
     } catch (err) {
       showMsg(err.message || "Could not save settings.", true)
     }

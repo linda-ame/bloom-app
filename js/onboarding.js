@@ -1,11 +1,11 @@
-import { loadHeader } from "./header.js?v=7"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=7"
+import { loadHeader } from "./header.js?v=8"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=8"
 import {
   acceptPendingInvites,
   listAcceptedPartnersForMe,
   pickPartnerOwnerId,
   getActiveView
-} from "./partnerLinks.js?v=7"
+} from "./partnerLinks.js?v=8"
 
 const supabase = window.supabaseClient
 
