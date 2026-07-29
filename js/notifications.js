@@ -1,6 +1,6 @@
-import { loadHeader } from "./header.js?v=12"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=12"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=12"
+import { loadHeader } from "./header.js?v=13"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=13"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=13"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
@@ -14,7 +14,7 @@ import {
   normalizeHours,
   DEFAULT_HOUR_PRESETS,
   MAX_FREQUENCY
-} from "./notificationPrefs.js?v=12"
+} from "./notificationPrefs.js?v=13"
 
 const supabase = window.supabaseClient
 
@@ -238,6 +238,22 @@ function wireRowInteractions() {
   })
 }
 
+async function flushDueNotifications(supabase) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+    await fetch(`${window.SUPABASE_URL}/functions/v1/notify-scheduled`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json"
+      }
+    })
+  } catch {
+    // Non-fatal — 15-min cron still delivers
+  }
+}
+
 async function initNotifications() {
   const { data: { session } } = await supabase.auth.getSession()
   const user = session?.user
@@ -309,6 +325,7 @@ async function initNotifications() {
     try {
       await registerPushSubscription(supabase, prefs.schedule.timezone)
       await saveNotificationPrefs(supabase, user.id, true, prefs)
+      await flushDueNotifications(supabase)
       showMsg("Notification settings saved.")
     } catch (err) {
       showMsg(err.message || "Could not save settings.", true)

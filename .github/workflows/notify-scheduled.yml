@@ -5,7 +5,8 @@ name: Bloom scheduled notifications
 
 on:
   schedule:
-    - cron: "5 * * * *" # every hour at :05
+    # Every 15 minutes — GitHub cron can skip/delay hourly jobs, which missed exact send hours.
+    - cron: "*/15 * * * *"
   workflow_dispatch: # allow manual run from GitHub Actions UI
 
 jobs:

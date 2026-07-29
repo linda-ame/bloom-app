@@ -56,11 +56,29 @@ function hourInTimezone(timeZone: string, now = new Date()) {
       hour: "numeric",
       hour12: false
     }).formatToParts(now)
-    const hour = parts.find((p) => p.type === "hour")?.value
-    return Number(hour)
+    let hour = Number(parts.find((p) => p.type === "hour")?.value)
+    // Some engines report midnight as 24
+    if (hour === 24) hour = 0
+    if (!Number.isFinite(hour)) return now.getUTCHours()
+    return hour
   } catch {
     return now.getUTCHours()
   }
+}
+
+/** Due slots for today: scheduled hours that have already started (catch up missed cron runs). */
+function dueSlotsToday(preferredHours: number[], currentHour: number): string[] {
+  const slots: string[] = []
+  const seen = new Set<number>()
+  for (const raw of preferredHours || []) {
+    const h = Number(raw)
+    if (!Number.isFinite(h)) continue
+    const hour = Math.min(23, Math.max(0, Math.round(h)))
+    if (hour > currentHour || seen.has(hour)) continue
+    seen.add(hour)
+    slots.push(`h${String(hour).padStart(2, "0")}`)
+  }
+  return slots
 }
 
 function dateInTimezone(timeZone: string, now = new Date()) {
@@ -273,81 +291,84 @@ Deno.serve(async (req) => {
     const scheduleTz = String(prefs.schedule?.timezone || "").trim()
     const timezone = scheduleTz || subs?.[0]?.timezone || "UTC"
     const hour = hourInTimezone(timezone, now)
-    const slot = `h${String(hour).padStart(2, "0")}`
     const today = dateInTimezone(timezone, now)
 
-    // ---- Self scheduled alerts (at each alert's chosen hours) ----
+    // ---- Self scheduled alerts (catch up any due hours earlier today) ----
     const selfCtx = await loadCycleContext(admin, userId)
     if (selfCtx) {
       const { nextPeriod, ovulation, windows } = selfCtx
 
-      if (
-        prefOn(prefs, "self_period_approaching") &&
-        hoursForPref(prefs, "self_period_approaching").includes(hour)
-      ) {
+      if (prefOn(prefs, "self_period_approaching")) {
         const days = Number(prefs.self_period_approaching.days_before) || 3
         const state = periodReminderState(nextPeriod, today, days)
         if (state) {
-          totalSent += await maybeSend(
-            admin,
-            userId,
-            "self_period_approaching",
-            ymd(today),
-            slot,
-            {
-              title: "Bloom",
-              body: periodBodySelf(state),
-              url: "./dashboard.html"
-            }
-          )
+          for (const slot of dueSlotsToday(
+            hoursForPref(prefs, "self_period_approaching"),
+            hour
+          )) {
+            totalSent += await maybeSend(
+              admin,
+              userId,
+              "self_period_approaching",
+              ymd(today),
+              slot,
+              {
+                title: "Bloom",
+                body: periodBodySelf(state),
+                url: "./dashboard.html"
+              }
+            )
+          }
         }
       }
 
-      if (
-        prefOn(prefs, "self_ovulation_approaching") &&
-        ovulation &&
-        hoursForPref(prefs, "self_ovulation_approaching").includes(hour)
-      ) {
+      if (prefOn(prefs, "self_ovulation_approaching") && ovulation) {
         const days = Number(prefs.self_ovulation_approaching.days_before) || 2
         const rem = daysUntilInWindow(ovulation, today, days)
         if (rem != null) {
-          totalSent += await maybeSend(
-            admin,
-            userId,
-            "self_ovulation_approaching",
-            ymd(today),
-            slot,
-            {
-              title: "Bloom",
-              body: `Possible ovulation ${remainingLabel(rem)}.`,
-              url: "./dashboard.html"
-            }
-          )
+          for (const slot of dueSlotsToday(
+            hoursForPref(prefs, "self_ovulation_approaching"),
+            hour
+          )) {
+            totalSent += await maybeSend(
+              admin,
+              userId,
+              "self_ovulation_approaching",
+              ymd(today),
+              slot,
+              {
+                title: "Bloom",
+                body: `Possible ovulation ${remainingLabel(rem)}.`,
+                url: "./dashboard.html"
+              }
+            )
+          }
         }
       }
 
-      if (
-        prefOn(prefs, "self_safe_approaching") &&
-        windows.fertileStart &&
-        hoursForPref(prefs, "self_safe_approaching").includes(hour)
-      ) {
+      if (prefOn(prefs, "self_safe_approaching") && windows.fertileStart) {
         const safeStart = safeAfterFertileStart(windows)
         if (safeStart) {
           const days = Number(prefs.self_safe_approaching.days_before) || 2
           const rem = daysUntilInWindow(safeStart, today, days)
           if (rem != null) {
-            totalSent += await maybeSend(
-              admin,
-              userId,
-              "self_safe_approaching",
-              ymd(today),
-              slot,
-              {
-                title: "Bloom",
-                body: `Low-fertility (safer) days begin ${remainingLabel(rem)}.`,
-                url: "./dashboard.html"
-              }
-            )
+            for (const slot of dueSlotsToday(
+              hoursForPref(prefs, "self_safe_approaching"),
+              hour
+            )) {
+              totalSent += await maybeSend(
+                admin,
+                userId,
+                "self_safe_approaching",
+                ymd(today),
+                slot,
+                {
+                  title: "Bloom",
+                  body: `Low-fertility (safer) days begin ${remainingLabel(rem)}.`,
+                  url: "./dashboard.html"
+                }
+              )
+            }
           }
         }
       }
@@ -392,78 +413,89 @@ Deno.serve(async (req) => {
           partnerSubs?.[0]?.timezone ||
           "UTC"
         const partnerHour = hourInTimezone(partnerTz, now)
-        const partnerSlot = `h${String(partnerHour).padStart(2, "0")}`
         const partnerToday = dateInTimezone(partnerTz, now)
         const partnerUrl = `./partner.html?owner=${encodeURIComponent(userId)}`
 
         if (
           prefOn(prefs, "partner_fertile_window") &&
           prefOn(partnerPrefs, "receive_partner_fertile_window") &&
-          hoursForPref(partnerPrefs, "receive_partner_fertile_window").includes(partnerHour) &&
           fertileStart
         ) {
           const days = Number(prefs.partner_fertile_window.days_before) || 2
           const rem = daysUntilInWindow(fertileStart, partnerToday, days)
           if (rem != null) {
-            totalSent += await maybeSend(
-              admin,
-              partnerId,
-              "partner_fertile_window",
-              ymd(partnerToday),
-              partnerSlot,
-              {
-                title: "Bloom",
-                body: `${name}: fertile window starts ${remainingLabel(rem)} (last safer days soon).`,
-                url: partnerUrl
-              }
-            )
+            for (const partnerSlot of dueSlotsToday(
+              hoursForPref(partnerPrefs, "receive_partner_fertile_window"),
+              partnerHour
+            )) {
+              totalSent += await maybeSend(
+                admin,
+                partnerId,
+                "partner_fertile_window",
+                ymd(partnerToday),
+                partnerSlot,
+                {
+                  title: "Bloom",
+                  body: `${name}: fertile window starts ${remainingLabel(rem)} (last safer days soon).`,
+                  url: partnerUrl
+                }
+              )
+            }
           }
         }
 
         if (
           prefOn(prefs, "partner_safe_after_fertile") &&
           prefOn(partnerPrefs, "receive_partner_safe_after_fertile") &&
-          hoursForPref(partnerPrefs, "receive_partner_safe_after_fertile").includes(partnerHour) &&
           safeStart
         ) {
           const days = Number(prefs.partner_safe_after_fertile.days_before) || 2
           const rem = daysUntilInWindow(safeStart, partnerToday, days)
           if (rem != null) {
-            totalSent += await maybeSend(
-              admin,
-              partnerId,
-              "partner_safe_after_fertile",
-              ymd(partnerToday),
-              partnerSlot,
-              {
-                title: "Bloom",
-                body: `${name}: last fertile days ending — safer days begin ${remainingLabel(rem)}.`,
-                url: partnerUrl
-              }
-            )
+            for (const partnerSlot of dueSlotsToday(
+              hoursForPref(partnerPrefs, "receive_partner_safe_after_fertile"),
+              partnerHour
+            )) {
+              totalSent += await maybeSend(
+                admin,
+                partnerId,
+                "partner_safe_after_fertile",
+                ymd(partnerToday),
+                partnerSlot,
+                {
+                  title: "Bloom",
+                  body: `${name}: last fertile days ending — safer days begin ${remainingLabel(rem)}.`,
+                  url: partnerUrl
+                }
+              )
+            }
           }
         }
 
         if (
           prefOn(prefs, "partner_period_expected") &&
-          prefOn(partnerPrefs, "receive_partner_period_expected") &&
-          hoursForPref(partnerPrefs, "receive_partner_period_expected").includes(partnerHour)
+          prefOn(partnerPrefs, "receive_partner_period_expected")
         ) {
           const days = Number(prefs.partner_period_expected.days_before) || 3
           const state = periodReminderState(nextPeriod, partnerToday, days)
           if (state) {
-            totalSent += await maybeSend(
-              admin,
-              partnerId,
-              "partner_period_expected",
-              ymd(partnerToday),
-              partnerSlot,
-              {
-                title: "Bloom",
-                body: periodBodyPartner(name, state),
-                url: partnerUrl
-              }
-            )
+            for (const partnerSlot of dueSlotsToday(
+              hoursForPref(partnerPrefs, "receive_partner_period_expected"),
+              partnerHour
+            )) {
+              totalSent += await maybeSend(
+                admin,
+                partnerId,
+                "partner_period_expected",
+                ymd(partnerToday),
+                partnerSlot,
+                {
+                  title: "Bloom",
+                  body: periodBodyPartner(name, state),
+                  url: partnerUrl
+                }
+              )
+            }
           }
         }
       }

@@ -1,5 +1,5 @@
-import { loadHeader } from "./header.js?v=12"
-import { acceptPendingInvites, listMyInvites } from "./partnerLinks.js?v=12"
+import { loadHeader } from "./header.js?v=13"
+import { acceptPendingInvites, listMyInvites } from "./partnerLinks.js?v=13"
 
 const supabase = window.supabaseClient
 
