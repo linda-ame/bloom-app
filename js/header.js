@@ -1,6 +1,6 @@
-import { getActiveView } from "./partnerLinks.js?v=10"
-import { fetchUserProfile } from "./profile.js?v=10"
-import { displayNameFromProfile } from "./notificationPrefs.js?v=10"
+import { getActiveView } from "./partnerLinks.js?v=11"
+import { fetchUserProfile } from "./profile.js?v=11"
+import { displayNameFromProfile } from "./notificationPrefs.js?v=11"
 
 function escapeHtml(str) {
   return String(str)

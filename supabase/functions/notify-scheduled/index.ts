@@ -4,7 +4,7 @@ import {
   adminClient,
   mergeDefaultPrefs,
   prefOn,
-  scheduleHoursFromPrefs,
+  hoursForPref,
   sendPushToUser,
   displayName,
   ymd,
@@ -273,17 +273,18 @@ Deno.serve(async (req) => {
     const scheduleTz = String(prefs.schedule?.timezone || "").trim()
     const timezone = scheduleTz || subs?.[0]?.timezone || "UTC"
     const hour = hourInTimezone(timezone, now)
-    const allowedHours = scheduleHoursFromPrefs(prefs)
-    const ownerSlotActive = allowedHours.includes(hour)
     const slot = `h${String(hour).padStart(2, "0")}`
     const today = dateInTimezone(timezone, now)
 
-    // ---- Self scheduled alerts (only at this user's chosen hour) ----
+    // ---- Self scheduled alerts (at each alert's chosen hours) ----
     const selfCtx = await loadCycleContext(admin, userId)
-    if (selfCtx && ownerSlotActive) {
+    if (selfCtx) {
       const { nextPeriod, ovulation, windows } = selfCtx
 
-      if (prefOn(prefs, "self_period_approaching")) {
+      if (
+        prefOn(prefs, "self_period_approaching") &&
+        hoursForPref(prefs, "self_period_approaching").includes(hour)
+      ) {
         const days = Number(prefs.self_period_approaching.days_before) || 3
         const state = periodReminderState(nextPeriod, today, days)
         if (state) {
@@ -302,7 +303,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (prefOn(prefs, "self_ovulation_approaching") && ovulation) {
+      if (
+        prefOn(prefs, "self_ovulation_approaching") &&
+        ovulation &&
+        hoursForPref(prefs, "self_ovulation_approaching").includes(hour)
+      ) {
         const days = Number(prefs.self_ovulation_approaching.days_before) || 2
         const rem = daysUntilInWindow(ovulation, today, days)
         if (rem != null) {
@@ -321,7 +326,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (prefOn(prefs, "self_safe_approaching") && windows.fertileStart) {
+      if (
+        prefOn(prefs, "self_safe_approaching") &&
+        windows.fertileStart &&
+        hoursForPref(prefs, "self_safe_approaching").includes(hour)
+      ) {
         const safeStart = safeAfterFertileStart(windows)
         if (safeStart) {
           const days = Number(prefs.self_safe_approaching.days_before) || 2
@@ -383,9 +392,6 @@ Deno.serve(async (req) => {
           partnerSubs?.[0]?.timezone ||
           "UTC"
         const partnerHour = hourInTimezone(partnerTz, now)
-        const partnerHours = scheduleHoursFromPrefs(partnerPrefs)
-        if (!partnerHours.includes(partnerHour)) continue
-
         const partnerSlot = `h${String(partnerHour).padStart(2, "0")}`
         const partnerToday = dateInTimezone(partnerTz, now)
         const partnerUrl = `./partner.html?owner=${encodeURIComponent(userId)}`
@@ -393,6 +399,7 @@ Deno.serve(async (req) => {
         if (
           prefOn(prefs, "partner_fertile_window") &&
           prefOn(partnerPrefs, "receive_partner_fertile_window") &&
+          hoursForPref(partnerPrefs, "receive_partner_fertile_window").includes(partnerHour) &&
           fertileStart
         ) {
           const days = Number(prefs.partner_fertile_window.days_before) || 2
@@ -416,6 +423,7 @@ Deno.serve(async (req) => {
         if (
           prefOn(prefs, "partner_safe_after_fertile") &&
           prefOn(partnerPrefs, "receive_partner_safe_after_fertile") &&
+          hoursForPref(partnerPrefs, "receive_partner_safe_after_fertile").includes(partnerHour) &&
           safeStart
         ) {
           const days = Number(prefs.partner_safe_after_fertile.days_before) || 2
@@ -438,7 +446,8 @@ Deno.serve(async (req) => {
 
         if (
           prefOn(prefs, "partner_period_expected") &&
-          prefOn(partnerPrefs, "receive_partner_period_expected")
+          prefOn(partnerPrefs, "receive_partner_period_expected") &&
+          hoursForPref(partnerPrefs, "receive_partner_period_expected").includes(partnerHour)
         ) {
           const days = Number(prefs.partner_period_expected.days_before) || 3
           const state = periodReminderState(nextPeriod, partnerToday, days)

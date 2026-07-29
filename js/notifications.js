@@ -1,6 +1,6 @@
-import { loadHeader } from "./header.js?v=10"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=10"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=10"
+import { loadHeader } from "./header.js?v=11"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=11"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=11"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
@@ -9,8 +9,12 @@ import {
   mergePrefs,
   listTimeZones,
   formatHourLabel,
-  clampHour
-} from "./notificationPrefs.js?v=10"
+  clampHour,
+  clampFrequency,
+  normalizeHours,
+  DEFAULT_HOUR_PRESETS,
+  MAX_FREQUENCY
+} from "./notificationPrefs.js?v=11"
 
 const supabase = window.supabaseClient
 
@@ -31,18 +35,6 @@ function clampDays(n, fallback) {
   const v = Number(n)
   if (!Number.isFinite(v)) return fallback
   return Math.min(7, Math.max(1, Math.round(v)))
-}
-
-function fillHourSelect(selectEl, selected) {
-  if (!selectEl) return
-  selectEl.innerHTML = ""
-  for (let h = 0; h < 24; h++) {
-    const opt = document.createElement("option")
-    opt.value = String(h)
-    opt.textContent = formatHourLabel(h)
-    if (h === clampHour(selected, 8)) opt.selected = true
-    selectEl.appendChild(opt)
-  }
 }
 
 function fillTimezoneSelect(selectEl, selected) {
@@ -69,46 +61,104 @@ function fillTimezoneSelect(selectEl, selected) {
   }
 }
 
-function syncFrequencyUI() {
-  const freq = document.getElementById("notifFrequency")?.value || "once"
-  document.getElementById("notifHour2Wrap")?.classList.toggle("hidden", freq !== "twice")
+function fillHourSelect(selectEl, selected) {
+  if (!selectEl) return
+  selectEl.innerHTML = ""
+  for (let h = 0; h < 24; h++) {
+    const opt = document.createElement("option")
+    opt.value = String(h)
+    opt.textContent = formatHourLabel(h)
+    if (h === clampHour(selected, 20)) opt.selected = true
+    selectEl.appendChild(opt)
+  }
 }
 
-function applyScheduleToForm(prefs) {
-  const s = mergePrefs(prefs).schedule
-  fillTimezoneSelect(document.getElementById("notifTimezone"), s.timezone)
-  const freq = document.getElementById("notifFrequency")
-  if (freq) freq.value = s.frequency === "twice" ? "twice" : "once"
-  fillHourSelect(document.getElementById("notifHour1"), s.hour1)
-  fillHourSelect(document.getElementById("notifHour2"), s.hour2)
-  syncFrequencyUI()
+function renderHourSlots(row, hours) {
+  const container = row.querySelector("[data-hours]")
+  if (!container) return
+  const list = Array.isArray(hours) && hours.length ? hours : [20]
+  container.innerHTML = ""
+  list.forEach((hour, index) => {
+    const wrap = document.createElement("div")
+    wrap.className = "notif-hour-slot"
+    const label = document.createElement("label")
+    label.textContent = list.length === 1 ? "Time" : `Time ${index + 1}`
+    const select = document.createElement("select")
+    select.dataset.hourIndex = String(index)
+    fillHourSelect(select, hour)
+    wrap.appendChild(label)
+    wrap.appendChild(select)
+    container.appendChild(wrap)
+  })
+}
+
+function readHoursFromRow(row, frequency) {
+  const selects = row.querySelectorAll("[data-hours] select")
+  const hours = []
+  selects.forEach((sel) => {
+    hours.push(clampHour(sel.value, 20))
+  })
+  return normalizeHours(hours, frequency)
+}
+
+function syncRowConfigVisibility(row) {
+  const on = row.querySelector(".notif-on-toggle")?.checked
+  const config = row.querySelector(".notif-row-config")
+  if (!config) return
+  config.classList.toggle("hidden", !on)
+}
+
+function ensureScheduleDefaults(row) {
+  const freqEl = row.querySelector("[data-key='frequency']")
+  if (!freqEl) return
+  let frequency = clampFrequency(freqEl.value, 1)
+  freqEl.value = String(frequency)
+
+  const existing = readHoursFromRow(row, frequency)
+  // If increasing frequency, fill new slots with presets
+  const hours = []
+  for (let i = 0; i < frequency; i++) {
+    hours.push(
+      existing[i] != null
+        ? existing[i]
+        : DEFAULT_HOUR_PRESETS[i] ?? 20
+    )
+  }
+  renderHourSlots(row, hours)
 }
 
 function applyPrefsToForm(prefs) {
-  applyScheduleToForm(prefs)
+  const merged = mergePrefs(prefs)
+  fillTimezoneSelect(
+    document.getElementById("notifTimezone"),
+    merged.schedule.timezone
+  )
+
   document.querySelectorAll("[data-pref]").forEach((row) => {
     const key = row.dataset.pref
-    const cfg = prefs[key] || {}
-    row.querySelectorAll("[data-key]").forEach((input) => {
-      const field = input.dataset.key
-      if (input.type === "checkbox") {
-        input.checked = Boolean(cfg[field])
-      } else if (field === "days_before") {
-        input.value = clampDays(cfg.days_before, 2)
-      }
-    })
+    const cfg = merged[key] || {}
+    const onToggle = row.querySelector(".notif-on-toggle")
+    if (onToggle) onToggle.checked = Boolean(cfg.on)
+
+    const daysEl = row.querySelector("[data-key='days_before']")
+    if (daysEl) {
+      daysEl.value = clampDays(cfg.days_before, Number(daysEl.value) || 2)
+    }
+
+    if (row.dataset.hasSchedule === "1") {
+      const frequency = clampFrequency(cfg.frequency, 1)
+      const freqEl = row.querySelector("[data-key='frequency']")
+      if (freqEl) freqEl.value = String(frequency)
+      renderHourSlots(row, normalizeHours(cfg.hours, frequency))
+    }
+
+    syncRowConfigVisibility(row)
   })
 }
 
 function readPrefsFromForm(base) {
   const prefs = mergePrefs(base)
   prefs.schedule = {
-    frequency:
-      document.getElementById("notifFrequency")?.value === "twice"
-        ? "twice"
-        : "once",
-    hour1: clampHour(document.getElementById("notifHour1")?.value, 8),
-    hour2: clampHour(document.getElementById("notifHour2")?.value, 20),
     timezone:
       document.getElementById("notifTimezone")?.value ||
       Intl.DateTimeFormat().resolvedOptions().timeZone ||
@@ -120,22 +170,36 @@ function readPrefsFromForm(base) {
     const next = { ...(prefs[key] || {}) }
     delete next.morning
     delete next.evening
-    row.querySelectorAll("[data-key]").forEach((input) => {
-      const field = input.dataset.key
-      if (input.type === "checkbox") {
-        next[field] = input.checked
-      } else if (field === "days_before") {
-        next.days_before = clampDays(input.value, next.days_before || 2)
-      }
-    })
+    delete next.hour1
+
+    const on = Boolean(row.querySelector(".notif-on-toggle")?.checked)
+    next.on = on
+
+    const daysEl = row.querySelector("[data-key='days_before']")
+    if (daysEl) {
+      next.days_before = clampDays(daysEl.value, next.days_before || 2)
+    }
+
+    if (row.dataset.hasSchedule === "1") {
+      const frequency = clampFrequency(
+        row.querySelector("[data-key='frequency']")?.value,
+        1
+      )
+      next.frequency = frequency
+      next.hours = on
+        ? readHoursFromRow(row, frequency)
+        : normalizeHours(next.hours, frequency)
+    } else {
+      delete next.frequency
+      delete next.hours
+    }
+
     prefs[key] = next
   })
   return prefs
 }
 
 function setDetailsVisible(_on) {
-  // Schedule and alert prefs stay visible so users can set times
-  // even before Chrome grants notification permission.
   document.getElementById("notifDetails")?.classList.remove("hidden")
 }
 
@@ -145,6 +209,32 @@ function selectedTimezone() {
     Intl.DateTimeFormat().resolvedOptions().timeZone ||
     "UTC"
   )
+}
+
+function wireRowInteractions() {
+  document.querySelectorAll("[data-pref]").forEach((row) => {
+    const onToggle = row.querySelector(".notif-on-toggle")
+    onToggle?.addEventListener("change", () => {
+      if (onToggle.checked && row.dataset.hasSchedule === "1") {
+        const freqEl = row.querySelector("[data-key='frequency']")
+        if (freqEl && !freqEl.value) freqEl.value = "1"
+        const hoursContainer = row.querySelector("[data-hours]")
+        const hasSlots = hoursContainer?.querySelector("select")
+        if (!hasSlots) {
+          renderHourSlots(row, normalizeHours([20], 1))
+        }
+        ensureScheduleDefaults(row)
+      }
+      syncRowConfigVisibility(row)
+    })
+
+    const freqEl = row.querySelector("[data-key='frequency']")
+    freqEl?.addEventListener("change", () => {
+      const frequency = clampFrequency(freqEl.value, 1)
+      if (frequency > MAX_FREQUENCY) freqEl.value = String(MAX_FREQUENCY)
+      ensureScheduleDefaults(row)
+    })
+  })
 }
 
 async function initNotifications() {
@@ -169,9 +259,8 @@ async function initNotifications() {
 
   let { enabled, prefs } = await fetchNotificationPrefs(supabase, user.id)
   applyPrefsToForm(prefs)
+  wireRowInteractions()
   setDetailsVisible(true)
-
-  document.getElementById("notifFrequency")?.addEventListener("change", syncFrequencyUI)
 
   const master = document.getElementById("masterEnabled")
   if (master) master.checked = enabled

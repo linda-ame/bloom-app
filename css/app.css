@@ -1152,61 +1152,48 @@ body.read-only .row-delete {
   border-bottom: none;
 }
 
-.notif-row-main {
+.notif-row-head {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
-.notif-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.notif-row-label {
   font-size: 14px;
   color: #333;
-  cursor: pointer;
+  line-height: 1.35;
 }
 
-.notif-check input {
-  width: auto;
+.notif-row-config {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notif-row-config.hidden {
+  display: none;
+}
+
+.notif-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notif-config-field label {
+  font-size: 13px;
+  color: #666;
   margin: 0;
 }
 
-.notif-days {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #666;
-}
-
-.notif-days input[type="number"] {
-  width: 64px;
-  padding: 6px 8px;
-}
-
-.notif-slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 10px;
-  padding-left: 2px;
-}
-
-.notif-hours-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 14px;
-}
-
-.notif-hours-row > div {
-  flex: 1;
-  min-width: 140px;
-}
-
+.notif-config-field input[type="number"],
+.notif-config-field select,
+.notif-hour-slot select,
 #scheduleSection select {
   width: 100%;
   box-sizing: border-box;
@@ -1215,6 +1202,30 @@ body.read-only .row-delete {
   border-radius: 8px;
   font-size: 15px;
   background: #fff;
+}
+
+.notif-config-field input[type="number"] {
+  max-width: 96px;
+}
+
+.notif-hours-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.notif-hour-slot {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notif-hour-slot label {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
 }
 
 /* =========================
