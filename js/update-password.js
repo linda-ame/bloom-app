@@ -1,4 +1,4 @@
-import { getPostAuthRedirect } from "./profile.js?v=5"
+import { getPostAuthRedirect } from "./profile.js?v=6"
 
 const supabase = window.supabaseClient
 

@@ -1195,6 +1195,28 @@ body.read-only .row-delete {
   padding-left: 2px;
 }
 
+.notif-hours-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.notif-hours-row > div {
+  flex: 1;
+  min-width: 140px;
+}
+
+#scheduleSection select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  background: #fff;
+}
+
 /* =========================
    MOBILE / RESPONSIVE
    Applied on screens ≤ 600px wide (phones)

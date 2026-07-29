@@ -1,13 +1,16 @@
-import { loadHeader } from "./header.js?v=5"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=5"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=5"
+import { loadHeader } from "./header.js?v=6"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=6"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=6"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
   registerPushSubscription,
   unregisterPushSubscription,
-  mergePrefs
-} from "./notificationPrefs.js?v=5"
+  mergePrefs,
+  listTimeZones,
+  formatHourLabel,
+  clampHour
+} from "./notificationPrefs.js?v=6"
 
 const supabase = window.supabaseClient
 
@@ -30,7 +33,59 @@ function clampDays(n, fallback) {
   return Math.min(7, Math.max(1, Math.round(v)))
 }
 
+function fillHourSelect(selectEl, selected) {
+  if (!selectEl) return
+  selectEl.innerHTML = ""
+  for (let h = 0; h < 24; h++) {
+    const opt = document.createElement("option")
+    opt.value = String(h)
+    opt.textContent = formatHourLabel(h)
+    if (h === clampHour(selected, 8)) opt.selected = true
+    selectEl.appendChild(opt)
+  }
+}
+
+function fillTimezoneSelect(selectEl, selected) {
+  if (!selectEl) return
+  const zones = listTimeZones()
+  const preferred =
+    selected ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "UTC"
+  selectEl.innerHTML = ""
+  if (!zones.includes(preferred)) {
+    const opt = document.createElement("option")
+    opt.value = preferred
+    opt.textContent = preferred
+    opt.selected = true
+    selectEl.appendChild(opt)
+  }
+  for (const z of zones) {
+    const opt = document.createElement("option")
+    opt.value = z
+    opt.textContent = z
+    if (z === preferred) opt.selected = true
+    selectEl.appendChild(opt)
+  }
+}
+
+function syncFrequencyUI() {
+  const freq = document.getElementById("notifFrequency")?.value || "once"
+  document.getElementById("notifHour2Wrap")?.classList.toggle("hidden", freq !== "twice")
+}
+
+function applyScheduleToForm(prefs) {
+  const s = mergePrefs(prefs).schedule
+  fillTimezoneSelect(document.getElementById("notifTimezone"), s.timezone)
+  const freq = document.getElementById("notifFrequency")
+  if (freq) freq.value = s.frequency === "twice" ? "twice" : "once"
+  fillHourSelect(document.getElementById("notifHour1"), s.hour1)
+  fillHourSelect(document.getElementById("notifHour2"), s.hour2)
+  syncFrequencyUI()
+}
+
 function applyPrefsToForm(prefs) {
+  applyScheduleToForm(prefs)
   document.querySelectorAll("[data-pref]").forEach((row) => {
     const key = row.dataset.pref
     const cfg = prefs[key] || {}
@@ -47,9 +102,24 @@ function applyPrefsToForm(prefs) {
 
 function readPrefsFromForm(base) {
   const prefs = mergePrefs(base)
+  prefs.schedule = {
+    frequency:
+      document.getElementById("notifFrequency")?.value === "twice"
+        ? "twice"
+        : "once",
+    hour1: clampHour(document.getElementById("notifHour1")?.value, 8),
+    hour2: clampHour(document.getElementById("notifHour2")?.value, 20),
+    timezone:
+      document.getElementById("notifTimezone")?.value ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone ||
+      "UTC"
+  }
+
   document.querySelectorAll("[data-pref]").forEach((row) => {
     const key = row.dataset.pref
     const next = { ...(prefs[key] || {}) }
+    delete next.morning
+    delete next.evening
     row.querySelectorAll("[data-key]").forEach((input) => {
       const field = input.dataset.key
       if (input.type === "checkbox") {
@@ -65,6 +135,14 @@ function readPrefsFromForm(base) {
 
 function setDetailsVisible(on) {
   document.getElementById("notifDetails")?.classList.toggle("hidden", !on)
+}
+
+function selectedTimezone() {
+  return (
+    document.getElementById("notifTimezone")?.value ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "UTC"
+  )
 }
 
 async function initNotifications() {
@@ -90,6 +168,8 @@ async function initNotifications() {
   let { enabled, prefs } = await fetchNotificationPrefs(supabase, user.id)
   applyPrefsToForm(prefs)
 
+  document.getElementById("notifFrequency")?.addEventListener("change", syncFrequencyUI)
+
   const master = document.getElementById("masterEnabled")
   if (master) master.checked = enabled
   setDetailsVisible(enabled)
@@ -100,7 +180,8 @@ async function initNotifications() {
 
     if (wantOn) {
       try {
-        await registerPushSubscription(supabase)
+        prefs = readPrefsFromForm(prefs)
+        await registerPushSubscription(supabase, selectedTimezone())
         enabled = true
         setDetailsVisible(true)
         await saveNotificationPrefs(supabase, user.id, true, prefs)
@@ -135,8 +216,7 @@ async function initNotifications() {
 
     prefs = readPrefsFromForm(prefs)
     try {
-      // Refresh subscription in case permission/device changed
-      await registerPushSubscription(supabase)
+      await registerPushSubscription(supabase, prefs.schedule.timezone)
       await saveNotificationPrefs(supabase, user.id, true, prefs)
       showMsg("Notification settings saved.")
     } catch (err) {

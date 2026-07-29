@@ -1,11 +1,11 @@
-import { buildCycleWindows, classifyDate } from "./cycleUI.js?v=5"
-import { getCycleInsights } from "./cycleEngine.js?v=5"
-import { getSelectedDate, setSelectedDate } from "./selectedDate.js?v=5"
+import { buildCycleWindows, classifyDate } from "./cycleUI.js?v=6"
+import { getCycleInsights } from "./cycleEngine.js?v=6"
+import { getSelectedDate, setSelectedDate } from "./selectedDate.js?v=6"
 import {
   openOtherForEdit,
   deleteLog,
   deletePeriod
-} from "./logController.js?v=5"
+} from "./logController.js?v=6"
 
 export { getSelectedDate, setSelectedDate }
 

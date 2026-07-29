@@ -4,6 +4,7 @@ import {
   adminClient,
   mergeDefaultPrefs,
   prefOn,
+  scheduleHoursFromPrefs,
   sendPushToUser,
   displayName,
   ymd,
@@ -79,12 +80,6 @@ function dateInTimezone(timeZone: string, now = new Date()) {
     x.setUTCHours(12, 0, 0, 0)
     return x
   }
-}
-
-function slotForHour(hour: number): "morning" | "evening" | null {
-  if (hour === 8) return "morning"
-  if (hour === 20) return "evening"
-  return null
 }
 
 async function alreadySent(
@@ -231,18 +226,17 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .limit(1)
 
-    const timezone = subs?.[0]?.timezone || "UTC"
+    const scheduleTz = String(prefs.schedule?.timezone || "").trim()
+    const timezone = scheduleTz || subs?.[0]?.timezone || "UTC"
     const hour = hourInTimezone(timezone, now)
-    const slot = slotForHour(hour)
-    // Self alerts run on morning slot only if evening not configured;
-    // for self we treat morning+evening windows: run at both 8 and 20.
-    if (!slot) continue
-
+    const allowedHours = scheduleHoursFromPrefs(prefs)
+    const ownerSlotActive = allowedHours.includes(hour)
+    const slot = `h${String(hour).padStart(2, "0")}`
     const today = dateInTimezone(timezone, now)
 
-    // ---- Self scheduled alerts (owner with complete profile) ----
+    // ---- Self scheduled alerts (only at this user's chosen hour) ----
     const selfCtx = await loadCycleContext(admin, userId)
-    if (selfCtx) {
+    if (selfCtx && ownerSlotActive) {
       const { nextPeriod, ovulation, windows } = selfCtx
 
       if (prefOn(prefs, "self_period_approaching")) {
@@ -282,10 +276,6 @@ Deno.serve(async (req) => {
       }
 
       if (prefOn(prefs, "self_safe_approaching") && windows.fertileStart) {
-        // "Safe" approaching = approaching the start of low fertility after period,
-        // or approaching fertileStart from earlier low days — use fertileStart as
-        // end of pre-fertile safe stretch: notify days before fertile window begins.
-        // Plan: upcoming safe window — after fertile ends.
         const safeStart = safeAfterFertileStart(windows)
         if (safeStart) {
           const days = Number(prefs.self_safe_approaching.days_before) || 2
@@ -335,82 +325,86 @@ Deno.serve(async (req) => {
         if (!partnerPrefsRow?.enabled) continue
         const partnerPrefs = mergeDefaultPrefs(partnerPrefsRow.prefs as PrefsMap)
 
+        const { data: partnerSubs } = await admin
+          .from("push_subscriptions")
+          .select("timezone")
+          .eq("user_id", partnerId)
+          .limit(1)
+
+        const partnerTz =
+          String(partnerPrefs.schedule?.timezone || "").trim() ||
+          partnerSubs?.[0]?.timezone ||
+          "UTC"
+        const partnerHour = hourInTimezone(partnerTz, now)
+        const partnerHours = scheduleHoursFromPrefs(partnerPrefs)
+        if (!partnerHours.includes(partnerHour)) continue
+
+        const partnerSlot = `h${String(partnerHour).padStart(2, "0")}`
+        const partnerToday = dateInTimezone(partnerTz, now)
         const partnerUrl = `./partner.html?owner=${encodeURIComponent(userId)}`
 
-        // Fertile window
         if (
           prefOn(prefs, "partner_fertile_window") &&
           prefOn(partnerPrefs, "receive_partner_fertile_window") &&
           fertileStart
         ) {
-          const cfg = prefs.partner_fertile_window
-          if (Boolean(cfg[slot])) {
-            const days = Number(cfg.days_before) || 2
-            if (daysBeforeMatch(fertileStart, today, days)) {
-              totalSent += await maybeSend(
-                admin,
-                partnerId,
-                "partner_fertile_window",
-                ymd(fertileStart),
-                slot,
-                {
-                  title: "Bloom",
-                  body: `${name}: fertile window starts in ${days} day${days === 1 ? "" : "s"} (last safer days soon).`,
-                  url: partnerUrl
-                }
-              )
-            }
+          const days = Number(prefs.partner_fertile_window.days_before) || 2
+          if (daysBeforeMatch(fertileStart, partnerToday, days)) {
+            totalSent += await maybeSend(
+              admin,
+              partnerId,
+              "partner_fertile_window",
+              ymd(fertileStart),
+              partnerSlot,
+              {
+                title: "Bloom",
+                body: `${name}: fertile window starts in ${days} day${days === 1 ? "" : "s"} (last safer days soon).`,
+                url: partnerUrl
+              }
+            )
           }
         }
 
-        // Safe after fertile
         if (
           prefOn(prefs, "partner_safe_after_fertile") &&
           prefOn(partnerPrefs, "receive_partner_safe_after_fertile") &&
           safeStart
         ) {
-          const cfg = prefs.partner_safe_after_fertile
-          if (Boolean(cfg[slot])) {
-            const days = Number(cfg.days_before) || 2
-            if (daysBeforeMatch(safeStart, today, days)) {
-              totalSent += await maybeSend(
-                admin,
-                partnerId,
-                "partner_safe_after_fertile",
-                ymd(safeStart),
-                slot,
-                {
-                  title: "Bloom",
-                  body: `${name}: last fertile days ending — safer days in ${days} day${days === 1 ? "" : "s"}.`,
-                  url: partnerUrl
-                }
-              )
-            }
+          const days = Number(prefs.partner_safe_after_fertile.days_before) || 2
+          if (daysBeforeMatch(safeStart, partnerToday, days)) {
+            totalSent += await maybeSend(
+              admin,
+              partnerId,
+              "partner_safe_after_fertile",
+              ymd(safeStart),
+              partnerSlot,
+              {
+                title: "Bloom",
+                body: `${name}: last fertile days ending — safer days in ${days} day${days === 1 ? "" : "s"}.`,
+                url: partnerUrl
+              }
+            )
           }
         }
 
-        // Period expected
         if (
           prefOn(prefs, "partner_period_expected") &&
           prefOn(partnerPrefs, "receive_partner_period_expected")
         ) {
-          const cfg = prefs.partner_period_expected
-          if (Boolean(cfg[slot])) {
-            const days = Number(cfg.days_before) || 3
-            if (daysBeforeMatch(nextPeriod, today, days)) {
-              totalSent += await maybeSend(
-                admin,
-                partnerId,
-                "partner_period_expected",
-                ymd(nextPeriod),
-                slot,
-                {
-                  title: "Bloom",
-                  body: `${name}: period expected in ${days} day${days === 1 ? "" : "s"}.`,
-                  url: partnerUrl
-                }
-              )
-            }
+          const days = Number(prefs.partner_period_expected.days_before) || 3
+          if (daysBeforeMatch(nextPeriod, partnerToday, days)) {
+            totalSent += await maybeSend(
+              admin,
+              partnerId,
+              "partner_period_expected",
+              ymd(nextPeriod),
+              partnerSlot,
+              {
+                title: "Bloom",
+                body: `${name}: period expected in ${days} day${days === 1 ? "" : "s"}.`,
+                url: partnerUrl
+              }
+            )
           }
         }
       }

@@ -46,34 +46,46 @@ export type PrefsMap = Record<string, Record<string, unknown>>
 
 export function mergeDefaultPrefs(stored: PrefsMap | null | undefined): PrefsMap {
   const defaults: PrefsMap = {
+    schedule: {
+      frequency: "once",
+      hour1: 8,
+      hour2: 20,
+      timezone: "UTC"
+    },
     self_period_approaching: { on: false, days_before: 3 },
     self_safe_approaching: { on: false, days_before: 2 },
     self_ovulation_approaching: { on: false, days_before: 2 },
     partner_period_logged: { on: false },
-    partner_fertile_window: {
-      on: false,
-      days_before: 2,
-      morning: true,
-      evening: true
-    },
-    partner_safe_after_fertile: {
-      on: false,
-      days_before: 2,
-      morning: true,
-      evening: false
-    },
-    partner_period_expected: {
-      on: false,
-      days_before: 3,
-      morning: true,
-      evening: false
-    },
+    partner_fertile_window: { on: false, days_before: 2 },
+    partner_safe_after_fertile: { on: false, days_before: 2 },
+    partner_period_expected: { on: false, days_before: 3 },
     receive_partner_period_logged: { on: true },
     receive_partner_fertile_window: { on: true },
     receive_partner_safe_after_fertile: { on: true },
     receive_partner_period_expected: { on: true }
   }
-  return { ...defaults, ...(stored || {}) }
+  const raw = stored || {}
+  const merged: PrefsMap = { ...defaults, ...raw }
+  merged.schedule = {
+    ...defaults.schedule,
+    ...(raw.schedule || {})
+  }
+  return merged
+}
+
+export function scheduleHoursFromPrefs(prefs: PrefsMap): number[] {
+  const s = mergeDefaultPrefs(prefs).schedule || {}
+  const clamp = (n: unknown, fb: number) => {
+    const v = Number(n)
+    if (!Number.isFinite(v)) return fb
+    return Math.min(23, Math.max(0, Math.round(v)))
+  }
+  const hour1 = clamp(s.hour1, 8)
+  if (s.frequency === "twice") {
+    const hour2 = clamp(s.hour2, 20)
+    return hour1 === hour2 ? [hour1] : [hour1, hour2]
+  }
+  return [hour1]
 }
 
 export function prefOn(prefs: PrefsMap, key: string) {

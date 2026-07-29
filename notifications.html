@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#ff6ca2">
 
   <title>Bloom - Notifications</title>
-  <link rel="stylesheet" href="css/app.css?v=5">
+  <link rel="stylesheet" href="css/app.css?v=6">
 </head>
 <body>
 
@@ -41,6 +41,34 @@
     </section>
 
     <div id="notifDetails" class="hidden">
+
+      <section class="settings-section" id="scheduleSection">
+        <h2>When to send</h2>
+        <p class="settings-desc">
+          Timed alerts (period / fertile / safe windows) use these hours in your timezone.
+          Instant alerts (e.g. period just logged) are sent right away.
+        </p>
+
+        <label for="notifTimezone">Timezone</label>
+        <select id="notifTimezone"></select>
+
+        <label for="notifFrequency" style="margin-top:14px;">How often</label>
+        <select id="notifFrequency">
+          <option value="once">Once a day</option>
+          <option value="twice">Twice a day</option>
+        </select>
+
+        <div class="notif-hours-row">
+          <div>
+            <label for="notifHour1">Time</label>
+            <select id="notifHour1"></select>
+          </div>
+          <div id="notifHour2Wrap" class="hidden">
+            <label for="notifHour2">Second time</label>
+            <select id="notifHour2"></select>
+          </div>
+        </div>
+      </section>
 
       <section id="selfSection" class="settings-section hidden">
         <h2>For myself</h2>
@@ -112,10 +140,6 @@
               <input type="number" min="1" max="7" data-key="days_before" value="2">
             </div>
           </div>
-          <div class="notif-slots">
-            <label class="notif-check"><input type="checkbox" data-key="morning"><span>Morning (8:00)</span></label>
-            <label class="notif-check"><input type="checkbox" data-key="evening"><span>Evening (20:00)</span></label>
-          </div>
         </div>
 
         <div class="notif-row" data-pref="partner_safe_after_fertile">
@@ -129,10 +153,6 @@
               <input type="number" min="1" max="7" data-key="days_before" value="2">
             </div>
           </div>
-          <div class="notif-slots">
-            <label class="notif-check"><input type="checkbox" data-key="morning"><span>Morning (8:00)</span></label>
-            <label class="notif-check"><input type="checkbox" data-key="evening"><span>Evening (20:00)</span></label>
-          </div>
         </div>
 
         <div class="notif-row" data-pref="partner_period_expected">
@@ -145,10 +165,6 @@
               <label>Days before</label>
               <input type="number" min="1" max="7" data-key="days_before" value="3">
             </div>
-          </div>
-          <div class="notif-slots">
-            <label class="notif-check"><input type="checkbox" data-key="morning"><span>Morning (8:00)</span></label>
-            <label class="notif-check"><input type="checkbox" data-key="evening"><span>Evening (20:00)</span></label>
           </div>
         </div>
       </section>
@@ -203,8 +219,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=5"></script>
-  <script type="module" src="js/notifications.js?v=5"></script>
+  <script src="js/supabase.js?v=6"></script>
+  <script type="module" src="js/notifications.js?v=6"></script>
 
 </body>
 </html>

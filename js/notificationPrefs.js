@@ -1,28 +1,19 @@
 /** Default notification preference shape. */
 export function defaultNotificationPrefs() {
   return {
+    schedule: {
+      frequency: "once",
+      hour1: 8,
+      hour2: 20,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    },
     self_period_approaching: { on: false, days_before: 3 },
     self_safe_approaching: { on: false, days_before: 2 },
     self_ovulation_approaching: { on: false, days_before: 2 },
     partner_period_logged: { on: false },
-    partner_fertile_window: {
-      on: false,
-      days_before: 2,
-      morning: true,
-      evening: true
-    },
-    partner_safe_after_fertile: {
-      on: false,
-      days_before: 2,
-      morning: true,
-      evening: false
-    },
-    partner_period_expected: {
-      on: false,
-      days_before: 3,
-      morning: true,
-      evening: false
-    },
+    partner_fertile_window: { on: false, days_before: 2 },
+    partner_safe_after_fertile: { on: false, days_before: 2 },
+    partner_period_expected: { on: false, days_before: 3 },
     receive_partner_period_logged: { on: true },
     receive_partner_fertile_window: { on: true },
     receive_partner_safe_after_fertile: { on: true },
@@ -30,8 +21,39 @@ export function defaultNotificationPrefs() {
   }
 }
 
+export function clampHour(n, fallback = 8) {
+  const v = Number(n)
+  if (!Number.isFinite(v)) return fallback
+  return Math.min(23, Math.max(0, Math.round(v)))
+}
+
 export function mergePrefs(stored) {
-  return { ...defaultNotificationPrefs(), ...(stored || {}) }
+  const defaults = defaultNotificationPrefs()
+  const raw = stored || {}
+  const merged = { ...defaults, ...raw }
+  merged.schedule = {
+    ...defaults.schedule,
+    ...(raw.schedule || {})
+  }
+  merged.schedule.frequency =
+    merged.schedule.frequency === "twice" ? "twice" : "once"
+  merged.schedule.hour1 = clampHour(merged.schedule.hour1, 8)
+  merged.schedule.hour2 = clampHour(merged.schedule.hour2, 20)
+  if (!merged.schedule.timezone) {
+    merged.schedule.timezone = defaults.schedule.timezone
+  }
+  return merged
+}
+
+/** Hours when scheduled alerts should fire for these prefs. */
+export function scheduleHours(prefs) {
+  const s = mergePrefs(prefs).schedule
+  if (s.frequency === "twice") {
+    const a = clampHour(s.hour1, 8)
+    const b = clampHour(s.hour2, 20)
+    return a === b ? [a] : [a, b]
+  }
+  return [clampHour(s.hour1, 8)]
 }
 
 export function displayNameFromProfile(profile, email) {
@@ -39,6 +61,31 @@ export function displayNameFromProfile(profile, email) {
   if (name) return name
   if (email) return String(email).split("@")[0]
   return "Someone"
+}
+
+export function listTimeZones() {
+  try {
+    if (typeof Intl !== "undefined" && Intl.supportedValuesOf) {
+      return Intl.supportedValuesOf("timeZone")
+    }
+  } catch {
+    // fall through
+  }
+  return [
+    "UTC",
+    "Europe/Riga",
+    "Europe/London",
+    "Europe/Berlin",
+    "Europe/Paris",
+    "America/New_York",
+    "America/Los_Angeles",
+    "Asia/Tokyo",
+    "Australia/Sydney"
+  ]
+}
+
+export function formatHourLabel(hour) {
+  return `${String(clampHour(hour, 0)).padStart(2, "0")}:00`
 }
 
 export async function fetchNotificationPrefs(supabase, userId) {
@@ -99,7 +146,7 @@ export async function fetchVapidPublicKey(supabase) {
   return payload.publicKey
 }
 
-export async function registerPushSubscription(supabase) {
+export async function registerPushSubscription(supabase, timezone) {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error(
       "Push notifications are not supported in this browser. On iPhone, add Bloom to your Home Screen first."
@@ -128,8 +175,10 @@ export async function registerPushSubscription(supabase) {
     }))
 
   const json = subscription.toJSON()
-  const timezone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  const tz =
+    (timezone || "").trim() ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "UTC"
 
   const { data: { session } } = await supabase.auth.getSession()
   const baseUrl = window.SUPABASE_URL
@@ -142,7 +191,7 @@ export async function registerPushSubscription(supabase) {
     body: JSON.stringify({
       endpoint: json.endpoint,
       keys: json.keys,
-      timezone
+      timezone: tz
     })
   })
 
