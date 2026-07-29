@@ -10,8 +10,8 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("push", (event) => {
   let data = {
-    title: "Bloom",
-    body: "You have a new cycle update.",
+    title: "Cycle update",
+    body: "",
     url: "./dashboard.html"
   }
 
@@ -23,15 +23,18 @@ self.addEventListener("push", (event) => {
   } catch {
     try {
       const text = event.data?.text()
-      if (text) data.body = text
+      if (text) data.title = text
     } catch {
       // keep defaults
     }
   }
 
+  const title = (data.title || data.body || "Cycle update").trim()
+  const body = data.title ? (data.body || "").trim() : ""
+
   event.waitUntil(
-    self.registration.showNotification(data.title || "Bloom", {
-      body: data.body || "",
+    self.registration.showNotification(title, {
+      body,
       icon: "./icons/icon-192.png",
       badge: "./icons/icon-192.png",
       data: { url: data.url || "./dashboard.html" }

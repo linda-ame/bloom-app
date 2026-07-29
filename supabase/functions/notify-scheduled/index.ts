@@ -313,8 +313,8 @@ Deno.serve(async (req) => {
               ymd(today),
               slot,
               {
-                title: "Bloom",
-                body: periodBodySelf(state),
+                title: periodBodySelf(state),
+                body: "",
                 url: "./dashboard.html"
               }
             )
@@ -337,8 +337,8 @@ Deno.serve(async (req) => {
               ymd(today),
               slot,
               {
-                title: "Bloom",
-                body: `Possible ovulation ${remainingLabel(rem)}.`,
+                title: `Possible ovulation ${remainingLabel(rem)}.`,
+                body: "",
                 url: "./dashboard.html"
               }
             )
@@ -363,8 +363,8 @@ Deno.serve(async (req) => {
                 ymd(today),
                 slot,
                 {
-                  title: "Bloom",
-                  body: `Low-fertility (safer) days begin ${remainingLabel(rem)}.`,
+                  title: `Low-fertility (safer) days begin ${remainingLabel(rem)}.`,
+                  body: "",
                   url: "./dashboard.html"
                 }
               )
@@ -435,8 +435,8 @@ Deno.serve(async (req) => {
                 ymd(partnerToday),
                 partnerSlot,
                 {
-                  title: "Bloom",
-                  body: `${name}: fertile window starts ${remainingLabel(rem)} (last safer days soon).`,
+                  title: `${name}: fertile window starts ${remainingLabel(rem)} (last safer days soon).`,
+                  body: "",
                   url: partnerUrl
                 }
               )
@@ -463,8 +463,8 @@ Deno.serve(async (req) => {
                 ymd(partnerToday),
                 partnerSlot,
                 {
-                  title: "Bloom",
-                  body: `${name}: last fertile days ending — safer days begin ${remainingLabel(rem)}.`,
+                  title: `${name}: last fertile days ending — safer days begin ${remainingLabel(rem)}.`,
+                  body: "",
                   url: partnerUrl
                 }
               )
@@ -490,8 +490,8 @@ Deno.serve(async (req) => {
                 ymd(partnerToday),
                 partnerSlot,
                 {
-                  title: "Bloom",
-                  body: periodBodyPartner(name, state),
+                  title: periodBodyPartner(name, state),
+                  body: "",
                   url: partnerUrl
                 }
               )

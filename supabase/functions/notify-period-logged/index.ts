@@ -87,8 +87,8 @@ Deno.serve(async (req) => {
     }
 
     const result = await sendPushToUser(admin, partnerId, {
-      title: "Bloom",
-      body: `${name} marked the start of their period on ${prettyDate}.`,
+      title: `${name} marked the start of their period on ${prettyDate}.`,
+      body: "",
       url: `./partner.html?owner=${encodeURIComponent(user.id)}`
     })
     totalSent += result.sent

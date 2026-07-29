@@ -1,15 +1,15 @@
 const supabase = window.supabaseClient
 
-import { getCycleInsights } from "./cycleEngine.js?v=13"
-import { getCycleUI } from "./cycleUI.js?v=13"
-import { loadHeader } from "./header.js?v=13"
-import { initCalendar } from "./calendar.js?v=13"
+import { getCycleInsights } from "./cycleEngine.js?v=14"
+import { getCycleUI } from "./cycleUI.js?v=14"
+import { loadHeader } from "./header.js?v=14"
+import { initCalendar } from "./calendar.js?v=14"
 import {
   acceptPendingInvites,
   isAcceptedPartnerOf,
   listAcceptedPartnersForMe,
   setActiveView
-} from "./partnerLinks.js?v=13"
+} from "./partnerLinks.js?v=14"
 
 function getOwnerIdFromUrl() {
   const params = new URLSearchParams(window.location.search)

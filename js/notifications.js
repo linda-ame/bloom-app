@@ -1,6 +1,6 @@
-import { loadHeader } from "./header.js?v=13"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=13"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=13"
+import { loadHeader } from "./header.js?v=14"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=14"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=14"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
@@ -14,7 +14,7 @@ import {
   normalizeHours,
   DEFAULT_HOUR_PRESETS,
   MAX_FREQUENCY
-} from "./notificationPrefs.js?v=13"
+} from "./notificationPrefs.js?v=14"
 
 const supabase = window.supabaseClient
 
