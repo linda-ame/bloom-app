@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#ff6ca2">
 
   <title>Bloom - Notifications</title>
-  <link rel="stylesheet" href="css/app.css?v=11">
+  <link rel="stylesheet" href="css/app.css?v=12">
 </head>
 <body>
 
@@ -42,13 +42,13 @@
       <p id="notifMsg" class="settings-msg hidden"></p>
     </section>
 
-    <div id="notifDetails">
+    <div id="notifDetails" class="hidden">
 
       <section class="settings-section" id="scheduleSection">
         <h2>Timezone</h2>
         <p class="settings-desc">
-          Used for all timed alerts on this account (for you and for your partner settings).
-          Frequency and send times are set separately on each alert below. Instant alerts (e.g. period just logged) are sent right away.
+          Used for all timed alerts on this account.
+          Frequency and send times are set separately on each alert below (default: once a day at 20:00). Instant alerts (e.g. period just logged) are sent right away.
         </p>
 
         <label for="notifTimezone">Timezone</label>
@@ -138,7 +138,7 @@
       <section id="forPartnerSection" class="settings-section hidden">
         <h2>For partner</h2>
         <p class="settings-desc">
-          Types you allow to be sent to your partner. They choose how often and at what times they receive each alert.
+          Types you allow to be sent to your partner. On their device, each alert defaults to once a day at 20:00 — they can change frequency and times under Receive.
           “Days before” reminders repeat every day until the event.
         </p>
 
@@ -204,7 +204,7 @@
       <section id="receiveSection" class="settings-section hidden">
         <h2>Receive from partner</h2>
         <p class="settings-desc">
-          Choose which alerts you want on this device, and how often. Your partner must also enable the matching “For partner” type.
+          Choose which alerts you want on this device. When you turn one on, it defaults to once a day at 20:00 — then you can change frequency and times. Your partner must also enable the matching “For partner” type.
         </p>
 
         <div class="notif-row" data-pref="receive_partner_period_logged">
@@ -288,8 +288,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=11"></script>
-  <script type="module" src="js/notifications.js?v=11"></script>
+  <script src="js/supabase.js?v=12"></script>
+  <script type="module" src="js/notifications.js?v=12"></script>
 
 </body>
 </html>

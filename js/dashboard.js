@@ -1,17 +1,17 @@
 const supabase = window.supabaseClient
 
-import { getCycleInsights } from "./cycleEngine.js?v=11"
-import { getCycleUI } from "./cycleUI.js?v=11"
-import { initLogController } from "./logController.js?v=11"
-import { loadHeader } from "./header.js?v=11"
-import { initCalendar } from "./calendar.js?v=11"
-import { isProfileComplete } from "./profile.js?v=11"
+import { getCycleInsights } from "./cycleEngine.js?v=12"
+import { getCycleUI } from "./cycleUI.js?v=12"
+import { initLogController } from "./logController.js?v=12"
+import { loadHeader } from "./header.js?v=12"
+import { initCalendar } from "./calendar.js?v=12"
+import { isProfileComplete } from "./profile.js?v=12"
 import {
   acceptPendingInvites,
   listAcceptedPartnersForMe,
   getActiveView,
   pickPartnerOwnerId
-} from "./partnerLinks.js?v=11"
+} from "./partnerLinks.js?v=12"
 
 async function initDashboard() {
 

@@ -1,6 +1,6 @@
 const supabase = window.supabaseClient
 
-import { getSelectedDate } from "./selectedDate.js?v=11"
+import { getSelectedDate } from "./selectedDate.js?v=12"
 
 const selectedPills = new Set()
 let editingDateKey = null

@@ -3,7 +3,7 @@ import {
   listAcceptedPartnersForMe,
   getActiveView,
   pickPartnerOwnerId
-} from "./partnerLinks.js?v=11"
+} from "./partnerLinks.js?v=12"
 
 /** Profile row is complete when all onboarding fields are saved. */
 export function isProfileComplete(profile) {

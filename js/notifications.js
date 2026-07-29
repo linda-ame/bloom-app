@@ -1,6 +1,6 @@
-import { loadHeader } from "./header.js?v=11"
-import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=11"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=11"
+import { loadHeader } from "./header.js?v=12"
+import { acceptPendingInvites, listAcceptedPartnersForMe } from "./partnerLinks.js?v=12"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=12"
 import {
   fetchNotificationPrefs,
   saveNotificationPrefs,
@@ -14,7 +14,7 @@ import {
   normalizeHours,
   DEFAULT_HOUR_PRESETS,
   MAX_FREQUENCY
-} from "./notificationPrefs.js?v=11"
+} from "./notificationPrefs.js?v=12"
 
 const supabase = window.supabaseClient
 
@@ -199,8 +199,16 @@ function readPrefsFromForm(base) {
   return prefs
 }
 
-function setDetailsVisible(_on) {
-  document.getElementById("notifDetails")?.classList.remove("hidden")
+function setDetailsVisible(on) {
+  document.getElementById("notifDetails")?.classList.toggle("hidden", !on)
+}
+
+/** When an alert is toggled on, fill once/day at 20:00 (user can change after). */
+function applyFreshScheduleDefaults(row) {
+  if (row.dataset.hasSchedule !== "1") return
+  const freqEl = row.querySelector("[data-key='frequency']")
+  if (freqEl) freqEl.value = "1"
+  renderHourSlots(row, [20])
 }
 
 function selectedTimezone() {
@@ -216,14 +224,7 @@ function wireRowInteractions() {
     const onToggle = row.querySelector(".notif-on-toggle")
     onToggle?.addEventListener("change", () => {
       if (onToggle.checked && row.dataset.hasSchedule === "1") {
-        const freqEl = row.querySelector("[data-key='frequency']")
-        if (freqEl && !freqEl.value) freqEl.value = "1"
-        const hoursContainer = row.querySelector("[data-hours]")
-        const hasSlots = hoursContainer?.querySelector("select")
-        if (!hasSlots) {
-          renderHourSlots(row, normalizeHours([20], 1))
-        }
-        ensureScheduleDefaults(row)
+        applyFreshScheduleDefaults(row)
       }
       syncRowConfigVisibility(row)
     })
@@ -260,10 +261,10 @@ async function initNotifications() {
   let { enabled, prefs } = await fetchNotificationPrefs(supabase, user.id)
   applyPrefsToForm(prefs)
   wireRowInteractions()
-  setDetailsVisible(true)
 
   const master = document.getElementById("masterEnabled")
   if (master) master.checked = enabled
+  setDetailsVisible(enabled)
 
   master?.addEventListener("change", async () => {
     hideMsg()
@@ -275,10 +276,12 @@ async function initNotifications() {
         await registerPushSubscription(supabase, selectedTimezone())
         enabled = true
         await saveNotificationPrefs(supabase, user.id, true, prefs)
+        setDetailsVisible(true)
         showMsg("Notifications enabled on this device.")
       } catch (err) {
         master.checked = false
         enabled = false
+        setDetailsVisible(false)
         showMsg(err.message || "Could not enable notifications.", true)
       }
       return
@@ -292,22 +295,21 @@ async function initNotifications() {
     enabled = false
     prefs = readPrefsFromForm(prefs)
     await saveNotificationPrefs(supabase, user.id, false, prefs)
+    setDetailsVisible(false)
     showMsg("Notifications turned off on this device.")
   })
 
   document.getElementById("saveNotifBtn")?.addEventListener("click", async () => {
     hideMsg()
+    if (!master?.checked) {
+      showMsg("Turn on “Enable notifications” first.", true)
+      return
+    }
     prefs = readPrefsFromForm(prefs)
     try {
-      if (master?.checked) {
-        await registerPushSubscription(supabase, prefs.schedule.timezone)
-      }
-      await saveNotificationPrefs(supabase, user.id, Boolean(master?.checked), prefs)
-      showMsg(
-        master?.checked
-          ? "Notification settings saved."
-          : "Settings saved. Turn on “Enable notifications” (and Allow in Chrome) to receive pushes."
-      )
+      await registerPushSubscription(supabase, prefs.schedule.timezone)
+      await saveNotificationPrefs(supabase, user.id, true, prefs)
+      showMsg("Notification settings saved.")
     } catch (err) {
       showMsg(err.message || "Could not save settings.", true)
     }
