@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Bloom">
+  <meta name="theme-color" content="#ff6ca2">
+
+  <title>Bloom - Notifications</title>
+  <link rel="stylesheet" href="css/app.css?v=5">
+</head>
+<body>
+
+  <div id="headerContainer"></div>
+
+  <div class="settings-page notifications-page">
+    <h1 class="settings-title">Notifications</h1>
+
+    <section class="settings-section">
+      <div class="notif-master-row">
+        <div>
+          <h2 class="notif-section-title">Enable notifications</h2>
+          <p class="settings-desc" style="margin:0;">
+            Turn on browser push alerts for this device. On iPhone/iPad, add Bloom to your Home Screen first, then allow notifications.
+          </p>
+        </div>
+        <label class="notif-switch">
+          <input type="checkbox" id="masterEnabled">
+          <span class="notif-switch-slider"></span>
+        </label>
+      </div>
+      <p id="notifMsg" class="settings-msg hidden"></p>
+    </section>
+
+    <div id="notifDetails" class="hidden">
+
+      <section id="selfSection" class="settings-section hidden">
+        <h2>For myself</h2>
+        <p class="settings-desc">Alerts on this device about your own cycle.</p>
+
+        <div class="notif-row" data-pref="self_period_approaching">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Upcoming period</span>
+            </label>
+            <div class="notif-days">
+              <label>Days before</label>
+              <input type="number" min="1" max="7" data-key="days_before" value="3">
+            </div>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="self_safe_approaching">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Upcoming safe (low fertility) window</span>
+            </label>
+            <div class="notif-days">
+              <label>Days before</label>
+              <input type="number" min="1" max="7" data-key="days_before" value="2">
+            </div>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="self_ovulation_approaching">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Possible ovulation approaching</span>
+            </label>
+            <div class="notif-days">
+              <label>Days before</label>
+              <input type="number" min="1" max="7" data-key="days_before" value="2">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="forPartnerSection" class="settings-section hidden">
+        <h2>For partner</h2>
+        <p class="settings-desc">
+          Types you allow to be sent to your partner. They must also enable notifications on their device and opt in to each type.
+        </p>
+
+        <div class="notif-row" data-pref="partner_period_logged">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>When I mark the start of my period</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="partner_fertile_window">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Upcoming fertile window / last safe days</span>
+            </label>
+            <div class="notif-days">
+              <label>Days before</label>
+              <input type="number" min="1" max="7" data-key="days_before" value="2">
+            </div>
+          </div>
+          <div class="notif-slots">
+            <label class="notif-check"><input type="checkbox" data-key="morning"><span>Morning (8:00)</span></label>
+            <label class="notif-check"><input type="checkbox" data-key="evening"><span>Evening (20:00)</span></label>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="partner_safe_after_fertile">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Last fertile days / upcoming safe days</span>
+            </label>
+            <div class="notif-days">
+              <label>Days before</label>
+              <input type="number" min="1" max="7" data-key="days_before" value="2">
+            </div>
+          </div>
+          <div class="notif-slots">
+            <label class="notif-check"><input type="checkbox" data-key="morning"><span>Morning (8:00)</span></label>
+            <label class="notif-check"><input type="checkbox" data-key="evening"><span>Evening (20:00)</span></label>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="partner_period_expected">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Period expected soon</span>
+            </label>
+            <div class="notif-days">
+              <label>Days before</label>
+              <input type="number" min="1" max="7" data-key="days_before" value="3">
+            </div>
+          </div>
+          <div class="notif-slots">
+            <label class="notif-check"><input type="checkbox" data-key="morning"><span>Morning (8:00)</span></label>
+            <label class="notif-check"><input type="checkbox" data-key="evening"><span>Evening (20:00)</span></label>
+          </div>
+        </div>
+      </section>
+
+      <section id="receiveSection" class="settings-section hidden">
+        <h2>Receive from partner</h2>
+        <p class="settings-desc">
+          Choose which alerts you want on this device. Your partner must also enable the matching “For partner” type.
+        </p>
+
+        <div class="notif-row" data-pref="receive_partner_period_logged">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>When they mark the start of their period</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="receive_partner_fertile_window">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Upcoming fertile window / last safe days</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="receive_partner_safe_after_fertile">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Last fertile days / upcoming safe days</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="notif-row" data-pref="receive_partner_period_expected">
+          <div class="notif-row-main">
+            <label class="notif-check">
+              <input type="checkbox" data-key="on">
+              <span>Period expected soon</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div class="settings-actions" style="margin:0 0 32px; padding:0 0;">
+        <button type="button" id="saveNotifBtn" class="btn-save">Save notification settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js?v=5"></script>
+  <script type="module" src="js/notifications.js?v=5"></script>
+
+</body>
+</html>

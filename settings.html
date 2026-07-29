@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#ff6ca2">
 
   <title>Bloom - Settings</title>
-  <link rel="stylesheet" href="css/app.css?v=4">
+  <link rel="stylesheet" href="css/app.css?v=5">
 </head>
 <body>
 
@@ -45,6 +45,17 @@
 
     <section class="settings-section">
       <h2>Account</h2>
+
+      <label for="displayNameInput">Display name</label>
+      <input type="text" id="displayNameInput" autocomplete="nickname" placeholder="e.g. Linda" maxlength="40">
+      <p class="settings-desc" style="margin-top:8px;">Shown to your partner in notifications (e.g. when you log a period).</p>
+
+      <div class="settings-actions">
+        <button type="button" id="saveDisplayNameBtn" class="btn-save">Save name</button>
+      </div>
+      <p id="displayNameMsg" class="settings-msg hidden"></p>
+
+      <hr class="settings-divider">
 
       <label for="emailInput">Email</label>
       <input type="email" id="emailInput" autocomplete="email">
@@ -115,8 +126,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=4"></script>
-  <script type="module" src="js/settings.js?v=4"></script>
+  <script src="js/supabase.js?v=5"></script>
+  <script type="module" src="js/settings.js?v=5"></script>
 
 </body>
 </html>

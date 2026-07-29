@@ -1,6 +1,6 @@
 const supabase = window.supabaseClient
 
-import { getSelectedDate } from "./selectedDate.js?v=4"
+import { getSelectedDate } from "./selectedDate.js?v=5"
 
 const selectedPills = new Set()
 let editingDateKey = null
@@ -144,13 +144,34 @@ export function initLogController() {
       )
     }
 
-    await supabase.from("cycles").insert([
+    const { error } = await supabase.from("cycles").insert([
       {
         user_id: user.id,
         start_date: date,
         cycle_length: cycleLength
       }
     ])
+
+    if (!error) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          await fetch(
+            `${window.SUPABASE_URL}/functions/v1/notify-period-logged`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ start_date: date })
+            }
+          )
+        }
+      } catch (err) {
+        console.error("notify-period-logged:", err)
+      }
+    }
 
     location.reload()
   })

@@ -16,7 +16,7 @@
 
   <title>Bloom - Onboarding</title>
 
-  <link rel="stylesheet" href="css/app.css?v=4">
+  <link rel="stylesheet" href="css/app.css?v=5">
 </head>
 
 <body>
@@ -31,6 +31,9 @@
         Welcome! You have successfully registered to Bloom.
         Please fill out the basic information needed to create your personalized cycle calendar.
         </h3>
+
+      <label for="displayName">Your display name</label>
+      <input type="text" id="displayName" autocomplete="nickname" placeholder="e.g. Linda" maxlength="40">
 
       <!-- Last period start -->
       <label>Last period start date</label>
@@ -52,8 +55,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=4"></script>
-  <script type="module" src="js/onboarding.js?v=4"></script>
+  <script src="js/supabase.js?v=5"></script>
+  <script type="module" src="js/onboarding.js?v=5"></script>
 
 
 </body>

@@ -1,11 +1,11 @@
-import { loadHeader } from "./header.js?v=4"
-import { fetchUserProfile, isProfileComplete } from "./profile.js?v=4"
+import { loadHeader } from "./header.js?v=5"
+import { fetchUserProfile, isProfileComplete } from "./profile.js?v=5"
 import {
   acceptPendingInvites,
   listAcceptedPartnersForMe,
   pickPartnerOwnerId,
   getActiveView
-} from "./partnerLinks.js?v=4"
+} from "./partnerLinks.js?v=5"
 
 const supabase = window.supabaseClient
 
@@ -65,6 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const cycle_length = document.getElementById("cycleLength").value
     const period_length = document.getElementById("periodLength").value
     const last_period_start = document.getElementById("lastPeriodStart").value
+    const display_name = (document.getElementById("displayName")?.value || "").trim()
 
     if (!cycle_length || !period_length || !last_period_start) {
       alert("Please fill all fields")
@@ -76,7 +77,8 @@ window.addEventListener("DOMContentLoaded", () => {
         id: user.id,
         cycle_length: Number(cycle_length),
         period_length: Number(period_length),
-        last_period_start
+        last_period_start,
+        display_name: display_name || null
       }
     ])
 

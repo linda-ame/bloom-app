@@ -1,5 +1,5 @@
-import { loadHeader } from "./header.js?v=4"
-import { acceptPendingInvites, listMyInvites } from "./partnerLinks.js?v=4"
+import { loadHeader } from "./header.js?v=5"
+import { acceptPendingInvites, listMyInvites } from "./partnerLinks.js?v=5"
 
 const supabase = window.supabaseClient
 
@@ -51,7 +51,13 @@ async function initSettings() {
     emailEl.value = user.email || ""
   }
 
+  const displayNameEl = document.getElementById("displayNameInput")
+  if (displayNameEl) {
+    displayNameEl.value = profile?.display_name || ""
+  }
+
   const profileMsg = document.getElementById("profileMsg")
+  const displayNameMsg = document.getElementById("displayNameMsg")
   const emailMsg = document.getElementById("emailMsg")
   const passwordMsg = document.getElementById("passwordMsg")
   const deleteMsg = document.getElementById("deleteMsg")
@@ -115,6 +121,26 @@ async function initSettings() {
   }
 
   await renderPartnerInvites()
+
+  document.getElementById("saveDisplayNameBtn")?.addEventListener("click", async () => {
+    hideMsg(displayNameMsg)
+    const display_name = (displayNameEl?.value || "").trim()
+
+    const { error } = await supabase.from("profiles").upsert([
+      {
+        id: user.id,
+        display_name: display_name || null
+      }
+    ])
+
+    if (error) {
+      showMsg(displayNameMsg, error.message, true)
+      return
+    }
+
+    showMsg(displayNameMsg, "Display name saved.")
+    await loadHeader()
+  })
 
   document.getElementById("invitePartnerBtn")?.addEventListener("click", async () => {
     hideMsg(sharingMsg)

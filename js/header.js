@@ -1,4 +1,6 @@
-import { getActiveView } from "./partnerLinks.js?v=4"
+import { getActiveView } from "./partnerLinks.js?v=5"
+import { fetchUserProfile } from "./profile.js?v=5"
+import { displayNameFromProfile } from "./notificationPrefs.js?v=5"
 
 function escapeHtml(str) {
   return String(str)
@@ -20,6 +22,16 @@ export async function loadHeader() {
   }
 
   const activeView = getActiveView()
+  let profile = null
+  try {
+    profile = await fetchUserProfile(supabase, user.id)
+  } catch {
+    profile = null
+  }
+
+  const greetingName = displayNameFromProfile(profile, user.email)
+  const greetingPrimary = escapeHtml(greetingName)
+  const greetingEmail = escapeHtml(user.email || "")
 
   const todayLabel = new Date().toLocaleDateString(undefined, {
     day: "numeric",
@@ -52,9 +64,15 @@ export async function loadHeader() {
         <div id="settingsMenu" class="header-menu hidden">
           <div class="header-menu-greeting">
             <div class="header-menu-greeting-label">Logged in as</div>
-            <div class="header-menu-greeting-email" title="${escapeHtml(user.email)}">${escapeHtml(user.email)}</div>
+            <div class="header-menu-greeting-email" title="${greetingEmail}">${greetingPrimary}</div>
+            ${
+              profile?.display_name
+                ? `<div class="header-menu-greeting-sub">${greetingEmail}</div>`
+                : ""
+            }
           </div>
           <a href="settings.html" class="header-menu-item">Settings</a>
+          <a href="notifications.html" class="header-menu-item">Notifications</a>
           <button type="button" id="logoutBtn" class="header-menu-item header-menu-logout">Logout</button>
         </div>
       </div>
