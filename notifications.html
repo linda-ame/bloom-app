@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#ff6ca2">
 
   <title>Bloom - Notifications</title>
-  <link rel="stylesheet" href="css/app.css?v=6">
+  <link rel="stylesheet" href="css/app.css?v=7">
 </head>
 <body>
 
@@ -29,7 +29,9 @@
         <div>
           <h2 class="notif-section-title">Enable notifications</h2>
           <p class="settings-desc" style="margin:0;">
-            Turn on browser push alerts for this device. On iPhone/iPad, add Bloom to your Home Screen first, then allow notifications.
+            Turn on browser push alerts for this device.
+            If Chrome says permission was not granted: click the lock icon left of the address bar → Site settings → Notifications → <strong>Allow</strong>, then toggle again.
+            On iPhone use <strong>Safari</strong> → Add to Home Screen (Chrome on iPhone cannot send push alerts).
           </p>
         </div>
         <label class="notif-switch">
@@ -219,8 +221,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="js/supabase.js?v=6"></script>
-  <script type="module" src="js/notifications.js?v=6"></script>
+  <script src="js/supabase.js?v=7"></script>
+  <script type="module" src="js/notifications.js?v=7"></script>
 
 </body>
 </html>

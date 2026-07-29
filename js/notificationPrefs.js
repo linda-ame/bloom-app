@@ -147,15 +147,40 @@ export async function fetchVapidPublicKey(supabase) {
 }
 
 export async function registerPushSubscription(supabase, timezone) {
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+  if (!window.isSecureContext) {
     throw new Error(
-      "Push notifications are not supported in this browser. On iPhone, add Bloom to your Home Screen first."
+      "Notifications need a secure (HTTPS) site. Open Bloom via https://linda-ame.github.io/bloom-app/"
     )
   }
 
-  const permission = await Notification.requestPermission()
+  if (!("Notification" in window)) {
+    throw new Error(
+      "This browser does not support notifications. Try Chrome or Safari on a phone with Bloom added to the Home Screen."
+    )
+  }
+
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    throw new Error(
+      "Push notifications are not supported here. On iPhone use Safari → Share → Add to Home Screen, then open Bloom from that icon (Chrome on iPhone cannot send push)."
+    )
+  }
+
+  // Already blocked earlier — Chrome will not show the prompt again
+  if (Notification.permission === "denied") {
+    throw new Error(
+      "Chrome blocked notifications for this site. Click the lock/tune icon left of the address bar → Site settings → Notifications → Allow, then try again. Or: chrome://settings/content/notifications"
+    )
+  }
+
+  let permission = Notification.permission
   if (permission !== "granted") {
-    throw new Error("Notification permission was not granted.")
+    permission = await Notification.requestPermission()
+  }
+
+  if (permission !== "granted") {
+    throw new Error(
+      "Notification permission was not granted. When Chrome asks, tap Allow. If you dismissed it, use the lock icon next to the URL → Notifications → Allow."
+    )
   }
 
   const swUrl = new URL("sw.js", window.location.href).href
