@@ -1,8 +1,8 @@
 const supabase = window.supabaseClient
 
 import { getSelectedDate } from "./selectedDate.js?v=14"
-import { getCycleInsights } from "./cycleEngine.js?v=16"
-import { lockPredictionForNewPeriod } from "./periodPredictions.js?v=16"
+import { getCycleInsights } from "./cycleEngine.js?v=17"
+import { lockPredictionForNewPeriod } from "./periodPredictions.js?v=17"
 
 const selectedPills = new Set()
 let editingDateKey = null

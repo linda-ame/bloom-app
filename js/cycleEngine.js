@@ -70,15 +70,37 @@ function applyConfirmedOvulationOverride(ovulation, nextPeriod, periodStart, log
   }
 }
 
+function isPlausibleCycleLength(n) {
+  return Number.isFinite(n) && n >= 15 && n <= 45
+}
+
+/** Prefer stored length when plausible; otherwise derive from adjacent starts. */
+function collectCycleLengths(sorted) {
+  const lengths = []
+  for (let i = 1; i < sorted.length; i++) {
+    const stored = Number(sorted[i].cycle_length)
+    if (isPlausibleCycleLength(stored)) {
+      lengths.push(stored)
+      continue
+    }
+    const prev = new Date(sorted[i - 1].start_date)
+    const cur = new Date(sorted[i].start_date)
+    const days = Math.round((cur - prev) / (1000 * 60 * 60 * 24))
+    if (isPlausibleCycleLength(days)) lengths.push(days)
+  }
+  return lengths
+}
+
 export function getCycleInsights(cycles, onboardingData, logs = []) {
   const now = new Date()
+  const onboardingCycle = Number(onboardingData?.cycle_length) || 28
 
   // -------------------------
   // 1. NO DATA → onboarding fallback
   // -------------------------
   if (!cycles || cycles.length === 0) {
     const start = new Date(onboardingData.last_period_start)
-    const cycleLength = onboardingData.cycle_length
+    const cycleLength = onboardingCycle
 
     const nextPeriod = new Date(start)
     nextPeriod.setDate(start.getDate() + cycleLength)
@@ -116,21 +138,16 @@ export function getCycleInsights(cycles, onboardingData, logs = []) {
 
   const lastCycle = sorted[sorted.length - 1]
   const lastStart = new Date(lastCycle.start_date)
+  const allLengths = collectCycleLengths(sorted)
 
   // -------------------------
   // 2. LIGHT DATA (1–2 cycles)
   // -------------------------
   if (cycles.length < 3) {
-    const onboardingCycle = onboardingData.cycle_length
-
-    const realLengths = cycles
-      .map(c => c.cycle_length)
-      .filter(Boolean)
-
-    const combined = realLengths.length
+    const combined = allLengths.length
       ? Math.round(
-          (realLengths.reduce((a, b) => a + b, 0) + onboardingCycle) /
-          (realLengths.length + 1)
+          (allLengths.reduce((a, b) => a + b, 0) + onboardingCycle) /
+            (allLengths.length + 1)
         )
       : onboardingCycle
 
@@ -164,14 +181,10 @@ export function getCycleInsights(cycles, onboardingData, logs = []) {
   // -------------------------
   // 3. FULL DATA (3+ cycles)
   // -------------------------
-  const last6 = sorted.slice(-6)
-
-  const lengths = last6
-    .map(c => c.cycle_length)
-    .filter(Boolean)
-
-  const avg =
-    Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length)
+  const recentLengths = allLengths.slice(-6)
+  const avg = recentLengths.length
+    ? Math.round(recentLengths.reduce((a, b) => a + b, 0) / recentLengths.length)
+    : onboardingCycle
 
   const nextPeriod = new Date(lastStart)
   nextPeriod.setDate(lastStart.getDate() + avg)

@@ -1,11 +1,11 @@
 import { buildCycleWindows, classifyDate } from "./cycleUI.js?v=14"
-import { getCycleInsights } from "./cycleEngine.js?v=16"
+import { getCycleInsights } from "./cycleEngine.js?v=17"
 import { getSelectedDate, setSelectedDate } from "./selectedDate.js?v=14"
 import {
   openOtherForEdit,
   deleteLog,
   deletePeriod
-} from "./logController.js?v=16"
+} from "./logController.js?v=17"
 
 export { getSelectedDate, setSelectedDate }
 
@@ -57,7 +57,13 @@ function extractConfirmedOvDates(logs) {
     .sort((a, b) => a - b)
 }
 
-export function buildProjectionContext(cycles, profile, logs = [], lockedPredictions = []) {
+export function buildProjectionContext(
+  cycles,
+  profile,
+  logs = [],
+  lockedPredictions = [],
+  lockedOvulations = []
+) {
   const insights = getCycleInsights(cycles || [], profile, logs)
   const periodLength = insights.periodLength ?? profile?.period_length ?? 5
   const cycleLength = insights.cycleLength ?? profile?.cycle_length ?? 28
@@ -71,49 +77,72 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
   const lockedPredictedKeys = new Set(
     (lockedPredictions || []).map(d => toDateKey(normalizeDate(d)))
   )
+  const lockedOvulationKeys = new Set(
+    (lockedOvulations || []).map(d => toDateKey(normalizeDate(d)))
+  )
   const confirmedOvDates = extractConfirmedOvDates(logs)
 
-  // Prefer logged cycles as ground truth (same idea as cycleEngine).
-  // Only fall back to onboarding last_period_start when nothing is logged,
-  // so deleting a cycles row cannot be immediately redrawn from profile.
-  const anchorStart =
-    loggedStarts.length > 0
-      ? loggedStarts[0]
-      : profile?.last_period_start
-        ? normalizeDate(profile.last_period_start)
-        : normalizeDate(insights.periodStart)
+  // Prefer logged cycles, but if onboarding start is earlier than the first
+  // logged period, keep it as anchor so pre-log days are not left blank/white.
+  // Between dates we still snap only to logged starts (no phantom periods).
+  const profileAnchor = profile?.last_period_start
+    ? normalizeDate(profile.last_period_start)
+    : null
+  const firstLogged = loggedStarts[0] || null
+  let anchorStart
+  if (firstLogged && profileAnchor && profileAnchor < firstLogged) {
+    anchorStart = profileAnchor
+  } else if (firstLogged) {
+    anchorStart = firstLogged
+  } else if (profileAnchor) {
+    anchorStart = profileAnchor
+  } else {
+    anchorStart = normalizeDate(insights.periodStart)
+  }
 
   const starts = []
   let cursor = anchorStart
   const horizon = addDays(new Date(), 540)
+  const today = normalizeDate(new Date())
+
+  const profileAnchorKey = profileAnchor ? toDateKey(profileAnchor) : null
 
   while (cursor < horizon) {
-    const isLogged = loggedKeys.has(toDateKey(cursor))
+    const cursorKey = toDateKey(cursor)
+    const isLogged = loggedKeys.has(cursorKey)
+    // Onboarding seed counts as a real historical period for coloring only.
+    const isSeeded = Boolean(profileAnchorKey && cursorKey === profileAnchorKey)
     const naturalNext = addDays(cursor, cycleLength)
     const nextLogged = loggedStarts.find(d => d > cursor)
-
-    const upperBound =
-      nextLogged && nextLogged < naturalNext ? nextLogged : naturalNext
-
-    const confirmedOv = confirmedOvDates.find(
-      d => d > cursor && d < upperBound
-    )
 
     let cycleOv
     let nextDate
 
-    if (confirmedOv) {
+    // Between two logged periods: always snap to the next logged start.
+    // Never invent phantom predicted starts in the past (that caused white
+    // gap days and scrambled ovulation markers).
+    if (nextLogged) {
+      nextDate = nextLogged
+      const confirmedOv = confirmedOvDates.find(
+        d => d > cursor && d < nextLogged
+      )
+      cycleOv = confirmedOv || addDays(nextDate, -(LUTEAL_PHASE_DAYS + 1))
+    } else if (confirmedOvDates.find(d => d > cursor && d < naturalNext)) {
+      const confirmedOv = confirmedOvDates.find(
+        d => d > cursor && d < naturalNext
+      )
       cycleOv = confirmedOv
-      const shifted = addDays(confirmedOv, LUTEAL_PHASE_DAYS + 1)
-      nextDate =
-        nextLogged && nextLogged <= shifted ? nextLogged : shifted
+      nextDate = addDays(confirmedOv, LUTEAL_PHASE_DAYS + 1)
     } else {
-      nextDate =
-        nextLogged && nextLogged < naturalNext ? nextLogged : naturalNext
+      nextDate = naturalNext
       cycleOv = addDays(nextDate, -(LUTEAL_PHASE_DAYS + 1))
     }
 
-    starts.push({ date: cursor, logged: isLogged, ovulation: cycleOv })
+    starts.push({
+      date: cursor,
+      logged: isLogged || isSeeded,
+      ovulation: cycleOv
+    })
 
     if (nextDate <= cursor) break
     cursor = nextDate
@@ -130,10 +159,10 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
 
   function getDayStatus(date) {
     const d = normalizeDate(date)
-    const today = normalizeDate(new Date())
 
     const dateKey = toDateKey(d)
     const isLockedPredictedStart = lockedPredictedKeys.has(dateKey)
+    const isLockedPredictedOvulation = lockedOvulationKeys.has(dateKey)
 
     if (d < anchorStart) {
       return {
@@ -144,20 +173,28 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
         isPeriod: false,
         isFirstPeriodDay: false,
         isLockedPredictedStart,
-        isOvulationDay: false
+        isOvulationDay: false,
+        isLockedPredictedOvulation
       }
     }
 
     const dTime = d.getTime()
-    // Live predicted starts only for today onward. Past comparison uses
-    // locked predictions (saved when a period was logged / became overdue).
+    // Live predicted period starts only for today onward.
     const isFirstPeriodDay = starts.some(s => {
       if (s.date.getTime() !== dTime) return false
       return s.logged || s.date.getTime() >= today.getTime()
     })
-    const isOvulationDay = starts.some(
-      s => s.ovulation && normalizeDate(s.ovulation).getTime() === dTime
+
+    const isConfirmedOvulationDay = confirmedOvDates.some(
+      ov => ov.getTime() === dTime
     )
+    // Live predicted ovulation only for today/future — past uses locked marks.
+    const isLivePredictedOvulation = starts.some(s => {
+      if (!s.ovulation) return false
+      const ov = normalizeDate(s.ovulation)
+      return ov.getTime() === dTime && ov.getTime() >= today.getTime()
+    })
+    const isOvulationDay = isConfirmedOvulationDay || isLivePredictedOvulation
 
     for (const ls of loggedStarts) {
       if (isInPeriodRange(d, ls, periodLength)) {
@@ -169,7 +206,8 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
           isPeriod: true,
           isFirstPeriodDay,
           isLockedPredictedStart,
-          isOvulationDay
+          isOvulationDay,
+          isLockedPredictedOvulation
         }
       }
     }
@@ -177,10 +215,24 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
     const idx = findGoverningIndex(d)
     const governing = starts[idx]
 
+    // For phase coloring in the past, prefer ovulation implied by the next
+    // logged period (stable). For current/future, use live projection ov.
+    let ovForWindows = governing.ovulation
+    if (governing.logged && d < today) {
+      const nextLoggedAfter = loggedStarts.find(ls => ls > governing.date)
+      if (nextLoggedAfter) {
+        const confirmed = confirmedOvDates.find(
+          ov => ov > governing.date && ov < nextLoggedAfter
+        )
+        ovForWindows =
+          confirmed || addDays(nextLoggedAfter, -(LUTEAL_PHASE_DAYS + 1))
+      }
+    }
+
     const windows = buildCycleWindows(
       governing.date,
       periodLength,
-      governing.ovulation
+      ovForWindows
     )
 
     const { phase, sub, phaseClass } = classifyDate(d, windows)
@@ -195,21 +247,22 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
           isPeriod: true,
           isFirstPeriodDay,
           isLockedPredictedStart,
-          isOvulationDay
+          isOvulationDay,
+          isLockedPredictedOvulation
         }
       }
-      // Hide fully-past *live* predicted period days. Locked prediction
-      // markers still show separately for actual-vs-predicted comparison.
+      // Future predicted period only — never blank past days to white.
       if (d < today) {
         return {
-          phaseClass: null,
-          phase: "",
+          phaseClass: "status-low",
+          phase: "Low fertility 🌿",
           sub: "",
           kind: "predicted",
           isPeriod: false,
           isFirstPeriodDay: false,
           isLockedPredictedStart,
-          isOvulationDay
+          isOvulationDay,
+          isLockedPredictedOvulation
         }
       }
       return {
@@ -220,7 +273,8 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
         isPeriod: true,
         isFirstPeriodDay,
         isLockedPredictedStart,
-        isOvulationDay
+        isOvulationDay,
+        isLockedPredictedOvulation
       }
     }
 
@@ -232,7 +286,8 @@ export function buildProjectionContext(cycles, profile, logs = [], lockedPredict
       isPeriod: false,
       isFirstPeriodDay,
       isLockedPredictedStart,
-      isOvulationDay
+      isOvulationDay,
+      isLockedPredictedOvulation
     }
   }
 
@@ -369,6 +424,12 @@ function renderGrid() {
       badge.textContent = "🔥"
       badge.title = "Ovulation"
       cell.appendChild(badge)
+    } else if (status.isLockedPredictedOvulation) {
+      const badge = document.createElement("span")
+      badge.className = "cal-day-icon cal-day-icon-ovulation-locked"
+      badge.textContent = "○"
+      badge.title = "Previously predicted ovulation"
+      cell.appendChild(badge)
     }
 
     if (status.phaseClass) {
@@ -437,6 +498,15 @@ function openDayPopup(dateKey, status) {
       ? "Also matched a previous prediction for this day"
       : "Previously predicted period start (locked for comparison)"
     body.appendChild(predEl)
+  }
+
+  if (status.isLockedPredictedOvulation) {
+    const ovEl = document.createElement("p")
+    ovEl.className = "day-popup-sub day-popup-predicted-locked"
+    ovEl.textContent = status.isOvulationDay
+      ? "Also matched a previous ovulation prediction"
+      : "Previously predicted ovulation (locked for comparison)"
+    body.appendChild(ovEl)
   }
 
   if (status.isFirstPeriodDay && cyclesByDate[dateKey]) {
@@ -555,7 +625,8 @@ export function initCalendar(cycles, profile, events, options = {}) {
     cycles,
     profile,
     events,
-    options.lockedPredictions || []
+    options.lockedPredictions || [],
+    options.lockedOvulations || []
   )
   eventsByDate = buildEventsMap(events)
   cyclesByDate = buildCyclesByDate(cycles)

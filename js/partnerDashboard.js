@@ -1,10 +1,10 @@
 const supabase = window.supabaseClient
 
-import { getCycleInsights } from "./cycleEngine.js?v=16"
+import { getCycleInsights } from "./cycleEngine.js?v=17"
 import { getCycleUI } from "./cycleUI.js?v=14"
 import { loadHeader } from "./header.js?v=14"
-import { initCalendar } from "./calendar.js?v=16"
-import { fetchPeriodPredictions } from "./periodPredictions.js?v=16"
+import { initCalendar } from "./calendar.js?v=17"
+import { fetchPeriodPredictions } from "./periodPredictions.js?v=17"
 import {
   acceptPendingInvites,
   isAcceptedPartnerOf,
@@ -113,9 +113,15 @@ async function initPartnerDashboard() {
     if (ui.periodClass) periodCardEl.classList.add(ui.periodClass)
   }
 
-  const lockedPredictions = await fetchPeriodPredictions(supabase, ownerId)
+  const locked = await fetchPeriodPredictions(supabase, ownerId)
+  const lockedPredictions = locked.starts || []
+  const lockedOvulations = locked.ovulations || []
 
-  initCalendar(cycles, profile, logs, { readOnly: true, lockedPredictions })
+  initCalendar(cycles, profile, logs, {
+    readOnly: true,
+    lockedPredictions,
+    lockedOvulations
+  })
 
   if (loadingEl) loadingEl.classList.add("hidden")
   if (dashboardEl) dashboardEl.classList.remove("hidden")
