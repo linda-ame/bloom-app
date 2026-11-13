@@ -630,9 +630,21 @@ h3 {
   right: 3px;
 }
 
+.cal-day-icon-predicted-locked {
+  top: 2px;
+  right: 3px;
+  color: #b85c7a;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
 .cal-day-icon-ovulation {
   bottom: 2px;
   right: 3px;
+}
+
+.day-popup-predicted-locked {
+  color: #b85c7a;
 }
 
 .cal-day:hover:not(.cal-day-empty) {

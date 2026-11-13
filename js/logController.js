@@ -1,6 +1,8 @@
 const supabase = window.supabaseClient
 
 import { getSelectedDate } from "./selectedDate.js?v=14"
+import { getCycleInsights } from "./cycleEngine.js?v=16"
+import { lockPredictionForNewPeriod } from "./periodPredictions.js?v=16"
 
 const selectedPills = new Set()
 let editingDateKey = null
@@ -65,15 +67,95 @@ export function openOtherForEdit(dateKey, existingLogs) {
 }
 
 export async function deleteLog(id) {
-  await supabase.from("cycle_logs").delete().eq("id", id)
+  const { data, error } = await supabase
+    .from("cycle_logs")
+    .delete()
+    .eq("id", id)
+    .select("id")
+
+  if (error) {
+    alert(error.message || "Could not delete entry.")
+    return
+  }
+  if (!data?.length) {
+    alert("Could not delete entry. It may already be gone, or you may not have permission.")
+    return
+  }
   location.reload()
+}
+
+function toDateOnly(value) {
+  return String(value || "").split("T")[0]
 }
 
 export async function deletePeriod(id) {
   if (!confirm("Remove this logged period? Predictions will be recalculated.")) {
     return
   }
-  await supabase.from("cycles").delete().eq("id", id)
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    alert("Please log in again.")
+    return
+  }
+
+  const { data: row, error: fetchError } = await supabase
+    .from("cycles")
+    .select("id, start_date")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (fetchError || !row) {
+    alert(fetchError?.message || "Could not find that period entry.")
+    return
+  }
+
+  const { data: deleted, error } = await supabase
+    .from("cycles")
+    .delete()
+    .eq("id", id)
+    .select("id")
+
+  if (error) {
+    alert(error.message || "Could not delete period.")
+    return
+  }
+  if (!deleted?.length) {
+    alert("Could not delete period. You may not have permission.")
+    return
+  }
+
+  // Keep profile seed in sync with remaining logged periods so empty-state
+  // predictions (and settings) do not resurrect the deleted start date.
+  const deletedKey = toDateOnly(row.start_date)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("last_period_start, cycle_length")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  const { data: remaining } = await supabase
+    .from("cycles")
+    .select("start_date")
+    .eq("user_id", user.id)
+    .order("start_date", { ascending: false })
+    .limit(1)
+
+  let nextStart = toDateOnly(remaining?.[0]?.start_date)
+  if (!nextStart) {
+    const cycleLength = Number(profile?.cycle_length) || 28
+    const d = new Date(`${deletedKey}T12:00:00`)
+    d.setDate(d.getDate() + cycleLength)
+    nextStart = toDateOnly(d.toISOString())
+  }
+
+  if (nextStart && nextStart !== toDateOnly(profile?.last_period_start)) {
+    await supabase
+      .from("profiles")
+      .update({ last_period_start: nextStart })
+      .eq("id", user.id)
+  }
+
   location.reload()
 }
 
@@ -122,20 +204,38 @@ export function initLogController() {
   savePeriodBtn?.addEventListener("click", async () => {
 
     const date = periodDateInput.value
+    if (!date) {
+      alert("Please select a date.")
+      return
+    }
 
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      alert("Please log in again.")
+      return
+    }
 
-    const { data: cycles } = await supabase
+    const { data: existingCycles } = await supabase
       .from("cycles")
-      .select("start_date")
+      .select("*")
       .eq("user_id", user.id)
-      .order("start_date", { ascending: false })
-      .limit(1)
 
-    const prev = cycles?.[0]?.start_date
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    // Lock the prediction this log fulfills (e.g. predicted Nov 14, actual Nov 12).
+    const insightsBefore = getCycleInsights(existingCycles || [], profile || {}, [])
+    await lockPredictionForNewPeriod(supabase, user.id, date, insightsBefore)
+
+    const sorted = [...(existingCycles || [])].sort(
+      (a, b) => new Date(a.start_date) - new Date(b.start_date)
+    )
+    const prev = sorted[sorted.length - 1]?.start_date
 
     let cycleLength = null
-
     if (prev) {
       const prevDate = new Date(prev)
       const newDate = new Date(date)
@@ -152,25 +252,28 @@ export function initLogController() {
       }
     ])
 
-    if (!error) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.access_token) {
-          await fetch(
-            `${window.SUPABASE_URL}/functions/v1/notify-period-logged`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${session.access_token}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ start_date: date })
-            }
-          )
-        }
-      } catch (err) {
-        console.error("notify-period-logged:", err)
+    if (error) {
+      alert(error.message || "Could not save period.")
+      return
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        await fetch(
+          `${window.SUPABASE_URL}/functions/v1/notify-period-logged`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ start_date: date })
+          }
+        )
       }
+    } catch (err) {
+      console.error("notify-period-logged:", err)
     }
 
     location.reload()

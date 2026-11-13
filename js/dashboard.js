@@ -1,10 +1,10 @@
 const supabase = window.supabaseClient
 
-import { getCycleInsights } from "./cycleEngine.js?v=14"
+import { getCycleInsights } from "./cycleEngine.js?v=16"
 import { getCycleUI } from "./cycleUI.js?v=14"
-import { initLogController } from "./logController.js?v=14"
+import { initLogController } from "./logController.js?v=16"
 import { loadHeader } from "./header.js?v=14"
-import { initCalendar } from "./calendar.js?v=14"
+import { initCalendar } from "./calendar.js?v=16"
 import { isProfileComplete } from "./profile.js?v=14"
 import {
   acceptPendingInvites,
@@ -12,6 +12,10 @@ import {
   getActiveView,
   pickPartnerOwnerId
 } from "./partnerLinks.js?v=14"
+import {
+  fetchPeriodPredictions,
+  lockOverduePrediction
+} from "./periodPredictions.js?v=16"
 
 async function initDashboard() {
 
@@ -60,6 +64,9 @@ async function initDashboard() {
   const insights = getCycleInsights(cycles, profile, logs)
   const ui = getCycleUI(insights)
 
+  await lockOverduePrediction(supabase, user.id, insights)
+  const lockedPredictions = await fetchPeriodPredictions(supabase, user.id)
+
   const cycleDayEl = document.getElementById("cycleDay")
   const nextPeriodEl = document.getElementById("nextPeriod")
   const cycleLengthEl = document.getElementById("cycleLength")
@@ -102,7 +109,7 @@ async function initDashboard() {
     }
   }
 
-  initCalendar(cycles, profile, logs)
+  initCalendar(cycles, profile, logs, { lockedPredictions })
 
   if (loadingEl) loadingEl.classList.add("hidden")
   if (dashboardEl) dashboardEl.classList.remove("hidden")

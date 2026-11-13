@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
 
   await admin.from("cycle_logs").delete().eq("user_id", user.id)
   await admin.from("cycles").delete().eq("user_id", user.id)
+  await admin.from("period_predictions").delete().eq("user_id", user.id)
   await admin.from("profiles").delete().eq("id", user.id)
   await admin.from("partner_links").delete().eq("owner_id", user.id)
   await admin.from("partner_links").delete().eq("partner_id", user.id)

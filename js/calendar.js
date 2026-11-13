@@ -1,11 +1,11 @@
 import { buildCycleWindows, classifyDate } from "./cycleUI.js?v=14"
-import { getCycleInsights } from "./cycleEngine.js?v=14"
+import { getCycleInsights } from "./cycleEngine.js?v=16"
 import { getSelectedDate, setSelectedDate } from "./selectedDate.js?v=14"
 import {
   openOtherForEdit,
   deleteLog,
   deletePeriod
-} from "./logController.js?v=14"
+} from "./logController.js?v=16"
 
 export { getSelectedDate, setSelectedDate }
 
@@ -57,7 +57,7 @@ function extractConfirmedOvDates(logs) {
     .sort((a, b) => a - b)
 }
 
-export function buildProjectionContext(cycles, profile, logs = []) {
+export function buildProjectionContext(cycles, profile, logs = [], lockedPredictions = []) {
   const insights = getCycleInsights(cycles || [], profile, logs)
   const periodLength = insights.periodLength ?? profile?.period_length ?? 5
   const cycleLength = insights.cycleLength ?? profile?.cycle_length ?? 28
@@ -68,12 +68,20 @@ export function buildProjectionContext(cycles, profile, logs = []) {
 
   const loggedStarts = sorted.map(c => normalizeDate(c.start_date))
   const loggedKeys = new Set(loggedStarts.map(toDateKey))
+  const lockedPredictedKeys = new Set(
+    (lockedPredictions || []).map(d => toDateKey(normalizeDate(d)))
+  )
   const confirmedOvDates = extractConfirmedOvDates(logs)
 
-  // Projection anchor = onboarding's last_period_start.
-  const anchorStart = profile?.last_period_start
-    ? normalizeDate(profile.last_period_start)
-    : (loggedStarts[0] || normalizeDate(insights.periodStart))
+  // Prefer logged cycles as ground truth (same idea as cycleEngine).
+  // Only fall back to onboarding last_period_start when nothing is logged,
+  // so deleting a cycles row cannot be immediately redrawn from profile.
+  const anchorStart =
+    loggedStarts.length > 0
+      ? loggedStarts[0]
+      : profile?.last_period_start
+        ? normalizeDate(profile.last_period_start)
+        : normalizeDate(insights.periodStart)
 
   const starts = []
   let cursor = anchorStart
@@ -122,6 +130,10 @@ export function buildProjectionContext(cycles, profile, logs = []) {
 
   function getDayStatus(date) {
     const d = normalizeDate(date)
+    const today = normalizeDate(new Date())
+
+    const dateKey = toDateKey(d)
+    const isLockedPredictedStart = lockedPredictedKeys.has(dateKey)
 
     if (d < anchorStart) {
       return {
@@ -131,12 +143,18 @@ export function buildProjectionContext(cycles, profile, logs = []) {
         kind: "none",
         isPeriod: false,
         isFirstPeriodDay: false,
+        isLockedPredictedStart,
         isOvulationDay: false
       }
     }
 
     const dTime = d.getTime()
-    const isFirstPeriodDay = starts.some(s => s.date.getTime() === dTime)
+    // Live predicted starts only for today onward. Past comparison uses
+    // locked predictions (saved when a period was logged / became overdue).
+    const isFirstPeriodDay = starts.some(s => {
+      if (s.date.getTime() !== dTime) return false
+      return s.logged || s.date.getTime() >= today.getTime()
+    })
     const isOvulationDay = starts.some(
       s => s.ovulation && normalizeDate(s.ovulation).getTime() === dTime
     )
@@ -150,6 +168,7 @@ export function buildProjectionContext(cycles, profile, logs = []) {
           kind: "actual",
           isPeriod: true,
           isFirstPeriodDay,
+          isLockedPredictedStart,
           isOvulationDay
         }
       }
@@ -175,6 +194,21 @@ export function buildProjectionContext(cycles, profile, logs = []) {
           kind: "actual",
           isPeriod: true,
           isFirstPeriodDay,
+          isLockedPredictedStart,
+          isOvulationDay
+        }
+      }
+      // Hide fully-past *live* predicted period days. Locked prediction
+      // markers still show separately for actual-vs-predicted comparison.
+      if (d < today) {
+        return {
+          phaseClass: null,
+          phase: "",
+          sub: "",
+          kind: "predicted",
+          isPeriod: false,
+          isFirstPeriodDay: false,
+          isLockedPredictedStart,
           isOvulationDay
         }
       }
@@ -185,6 +219,7 @@ export function buildProjectionContext(cycles, profile, logs = []) {
         kind: "predicted",
         isPeriod: true,
         isFirstPeriodDay,
+        isLockedPredictedStart,
         isOvulationDay
       }
     }
@@ -196,6 +231,7 @@ export function buildProjectionContext(cycles, profile, logs = []) {
       kind: governing.logged ? "actual" : "predicted",
       isPeriod: false,
       isFirstPeriodDay,
+      isLockedPredictedStart,
       isOvulationDay
     }
   }
@@ -319,6 +355,12 @@ function renderGrid() {
       badge.textContent = "🩸"
       badge.title = "Period start"
       cell.appendChild(badge)
+    } else if (status.isLockedPredictedStart) {
+      const badge = document.createElement("span")
+      badge.className = "cal-day-icon cal-day-icon-predicted-locked"
+      badge.textContent = "◇"
+      badge.title = "Previously predicted period start"
+      cell.appendChild(badge)
     }
 
     if (status.isOvulationDay) {
@@ -381,11 +423,27 @@ function openDayPopup(dateKey, status) {
       subEl.textContent = status.sub
       body.appendChild(subEl)
     }
-  } else {
+  } else if (!status.isLockedPredictedStart) {
     const subEl = document.createElement("p")
     subEl.className = "day-popup-sub"
     subEl.textContent = "No cycle data for this day"
     body.appendChild(subEl)
+  }
+
+  if (status.isLockedPredictedStart) {
+    const predEl = document.createElement("p")
+    predEl.className = "day-popup-sub day-popup-predicted-locked"
+    predEl.textContent = status.isFirstPeriodDay
+      ? "Also matched a previous prediction for this day"
+      : "Previously predicted period start (locked for comparison)"
+    body.appendChild(predEl)
+  }
+
+  if (status.isFirstPeriodDay && cyclesByDate[dateKey]) {
+    const actualEl = document.createElement("p")
+    actualEl.className = "day-popup-sub"
+    actualEl.textContent = "Logged period start"
+    body.appendChild(actualEl)
   }
 
   const logs = getEventsForDate(dateKey)
@@ -493,7 +551,12 @@ function bindNavigation() {
 
 export function initCalendar(cycles, profile, events, options = {}) {
   calendarReadOnly = Boolean(options.readOnly)
-  projection = buildProjectionContext(cycles, profile, events)
+  projection = buildProjectionContext(
+    cycles,
+    profile,
+    events,
+    options.lockedPredictions || []
+  )
   eventsByDate = buildEventsMap(events)
   cyclesByDate = buildCyclesByDate(cycles)
 
