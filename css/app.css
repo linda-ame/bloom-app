@@ -631,11 +631,8 @@ h3 {
 }
 
 .cal-day-icon-predicted-locked {
-  top: 2px;
-  right: 3px;
-  color: #b85c7a;
-  font-size: 10px;
-  opacity: 0.85;
+  opacity: 0.35;
+  filter: grayscale(1);
 }
 
 .cal-day-icon-ovulation {
@@ -644,11 +641,8 @@ h3 {
 }
 
 .cal-day-icon-ovulation-locked {
-  bottom: 2px;
-  right: 3px;
-  color: #b85c7a;
-  font-size: 10px;
-  opacity: 0.85;
+  opacity: 0.35;
+  filter: grayscale(1);
 }
 
 .day-popup-predicted-locked {

@@ -3,7 +3,7 @@ const supabase = window.supabaseClient
 import { getCycleInsights } from "./cycleEngine.js?v=17"
 import { getCycleUI } from "./cycleUI.js?v=14"
 import { loadHeader } from "./header.js?v=14"
-import { initCalendar } from "./calendar.js?v=17"
+import { initCalendar } from "./calendar.js?v=18"
 import { fetchPeriodPredictions } from "./periodPredictions.js?v=17"
 import {
   acceptPendingInvites,

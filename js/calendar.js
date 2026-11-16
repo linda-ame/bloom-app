@@ -412,8 +412,8 @@ function renderGrid() {
       cell.appendChild(badge)
     } else if (status.isLockedPredictedStart) {
       const badge = document.createElement("span")
-      badge.className = "cal-day-icon cal-day-icon-predicted-locked"
-      badge.textContent = "◇"
+      badge.className = "cal-day-icon cal-day-icon-period cal-day-icon-predicted-locked"
+      badge.textContent = "🩸"
       badge.title = "Previously predicted period start"
       cell.appendChild(badge)
     }
@@ -426,8 +426,8 @@ function renderGrid() {
       cell.appendChild(badge)
     } else if (status.isLockedPredictedOvulation) {
       const badge = document.createElement("span")
-      badge.className = "cal-day-icon cal-day-icon-ovulation-locked"
-      badge.textContent = "○"
+      badge.className = "cal-day-icon cal-day-icon-ovulation cal-day-icon-ovulation-locked"
+      badge.textContent = "🔥"
       badge.title = "Previously predicted ovulation"
       cell.appendChild(badge)
     }
